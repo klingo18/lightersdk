@@ -61,7 +61,7 @@
                 
                 const go = new Go();
                 const wasm = await WebAssembly.instantiateStreaming(
-                    fetch('../../dist/lighter.wasm'), 
+                    fetch('../../lighter.wasm'), 
                     go.importObject
                 );
                 go.run(wasm.instance);
