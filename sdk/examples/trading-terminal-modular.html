@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighter Trading Terminal - Modular</title>
+    <link rel="stylesheet" href="components/terminal.css">
+    <link rel="stylesheet" href="components/orderbook.css">
+    <link rel="stylesheet" href="components/chart.css">
+    <link rel="stylesheet" href="components/trading-panel.css">
+</head>
+<body>
+    <div class="terminal-container">
+        <div class="terminal-header">
+            <div class="market-selector">
+                <label class="stat-label">MARKET</label>
+                <select id="marketSelect">
+                    <option value="1">Loading markets...</option>
+                </select>
+            </div>
+            <div class="market-stats">
+                <div class="stat-item"><span class="stat-label">Mark Price</span><span class="stat-value" id="markPrice">--</span></div>
+                <div class="stat-item"><span class="stat-label">24h Change</span><span class="stat-value" id="priceChange">--</span></div>
+                <div class="stat-item"><span class="stat-label">24h Volume</span><span class="stat-value" id="volume24h">--</span></div>
+                <div class="stat-item"><span class="stat-label">Open Interest</span><span class="stat-value" id="openInterest">--</span></div>
+            </div>
+            <button onclick="openSettings()" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; margin-left: auto;">⚙️ Settings</button>
+        </div>
+        
+        <!-- Settings Modal -->
+        <div id="settingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+            <div style="background: #1a1f3a; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; border: 1px solid #2a2f4a;">
+                <h2 style="color: #667eea; margin-bottom: 20px;">⚙️ Settings</h2>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #9ca3af; font-size: 12px; margin-bottom: 5px;">Private Key</label>
+                    <input type="password" id="settingsPrivateKey" placeholder="0x..." style="width: 100%; padding: 10px; background: #0a0e27; border: 1px solid #2a2f4a; color: #e0e0e0; border-radius: 6px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #9ca3af; font-size: 12px; margin-bottom: 5px;">Account Index</label>
+                    <input type="number" id="settingsAccountIndex" placeholder="123456" style="width: 100%; padding: 10px; background: #0a0e27; border: 1px solid #2a2f4a; color: #e0e0e0; border-radius: 6px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #9ca3af; font-size: 12px; margin-bottom: 5px;">API Key Index</label>
+                    <input type="number" id="settingsApiKeyIndex" placeholder="0" value="0" style="width: 100%; padding: 10px; background: #0a0e27; border: 1px solid #2a2f4a; color: #e0e0e0; border-radius: 6px;">
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="saveSettings()" style="flex: 1; padding: 12px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">💾 Save & Connect</button>
+                    <button onclick="closeSettings()" style="padding: 12px 20px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer;">Cancel</button>
+                </div>
+            </div>
+        </div>
+        <div id="orderbook-container"></div>
+        <div id="trading-panel-container"></div>
+    </div>
+
+    <script src="../../wasm_exec.js"></script>
+    <script type="module">
+        import { LighterSDK, ORDER_TYPES, TIME_IN_FORCE, ORDER_SIDES, GROUPING_TYPES } from '../core/lighter-sdk.js';
+        import { TradingPanelComponent } from './components/trading-panel.js';
+
+        let sdk, currentMarket = 1;
+        let tradingPanelComp;
+
+        window.addEventListener('load', async () => {
+            await initWASM();
+            initComponents();
+            
+            // Try to auto-init SDK if credentials exist
+            const savedKey = localStorage.getItem('lighter_private_key');
+            const savedIndex = localStorage.getItem('lighter_account_index');
+            const savedApiKeyIndex = localStorage.getItem('lighter_api_key_index');
+            if (savedKey && savedIndex) {
+                await initSDK(savedKey, parseInt(savedIndex), parseInt(savedApiKeyIndex) || 0);
+                startDataFeeds(); // This starts the intervals
+            } else {
+                console.log('[Terminal] No saved credentials - click Settings to connect');
+            }
+        });
+
+        async function initWASM() {
+            const go = new Go();
+            const result = await WebAssembly.instantiateStreaming(fetch('../../lighter.wasm'), go.importObject);
+            go.run(result.instance);
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        async function initSDK(privateKey, accountIndex, apiKeyIndex = 0) {
+            try {
+                console.log('[Terminal] Initializing SDK...');
+                sdk = new LighterSDK({privateKey, accountIndex, apiKeyIndex, network: 'mainnet'});
+                await sdk.init();
+                console.log('[Terminal] SDK initialized');
+                
+                // Connect WebSocket (no auth token needed)
+                await sdk.connectWebSocket();
+                await sdk.subscribeToAllOrders((msg) => tradingPanelComp.updateOpenOrders(msg.orders));
+                console.log('[Terminal] WebSocket connected');
+                
+                // NOW load markets
+                await loadMarkets();
+                console.log('[Terminal] Markets loaded');
+            } catch (e) {
+                console.error('[Terminal] SDK init error:', e);
+                alert('Failed to initialize SDK: ' + e.message);
+            }
+        }
+        
+        window.openSettings = function() {
+            document.getElementById('settingsModal').style.display = 'flex';
+            document.getElementById('settingsPrivateKey').value = localStorage.getItem('lighter_private_key') || '';
+            document.getElementById('settingsAccountIndex').value = localStorage.getItem('lighter_account_index') || '';
+            document.getElementById('settingsApiKeyIndex').value = localStorage.getItem('lighter_api_key_index') || '0';
+        };
+        
+        window.closeSettings = function() {
+            document.getElementById('settingsModal').style.display = 'none';
+        };
+        
+        window.saveSettings = async function() {
+            const privateKey = document.getElementById('settingsPrivateKey').value.trim();
+            const accountIndex = parseInt(document.getElementById('settingsAccountIndex').value);
+            const apiKeyIndex = parseInt(document.getElementById('settingsApiKeyIndex').value) || 0;
+            
+            if (!privateKey || !accountIndex) {
+                alert('Please enter both private key and account index');
+                return;
+            }
+            
+            localStorage.setItem('lighter_private_key', privateKey);
+            localStorage.setItem('lighter_account_index', accountIndex);
+            localStorage.setItem('lighter_api_key_index', apiKeyIndex);
+            
+            closeSettings();
+            await initSDK(privateKey, accountIndex, apiKeyIndex);
+            startDataFeeds(); // Start intervals after init
+        };
+
+        function initComponents() {
+            // Render orderbook
+            document.getElementById('orderbook-container').innerHTML = `
+                <div style="background: #0f1419; padding: 15px; height: 100%; overflow-y: auto;">
+                    <h3 style="font-size: 14px; margin-bottom: 15px; color: #e0e0e0;">Order Book</h3>
+                    <div id="orderbook-list"></div>
+                </div>
+            `;
+            
+            tradingPanelComp = new TradingPanelComponent('trading-panel-container', {
+                onPlaceOrder: async (data) => {
+                    try {
+                        console.log('[APP] Placing order:', data);
+                        
+                        // Handle bracket orders (entry + TP + SL)
+                        if (data.addBracket && (data.orderType === 'limit' || data.orderType === 'market')) {
+                            // For market entry, use best bid/ask
+                            let entryPrice = data.price;
+                            if (data.orderType === 'market') {
+                                if (orderbookState.bids.length > 0 && orderbookState.asks.length > 0) {
+                                    entryPrice = data.side === 'buy' ? orderbookState.asks[0].price : orderbookState.bids[0].price;
+                                } else {
+                                    throw new Error('Cannot place market order - no orderbook data');
+                                }
+                            }
+                            
+                            const orders = [
+                                {
+                                    market: currentMarket,
+                                    side: data.side,
+                                    amount: data.amount,
+                                    price: entryPrice,
+                                    orderType: data.orderType === 'market' ? ORDER_TYPES.MARKET : ORDER_TYPES.LIMIT,
+                                    timeInForce: data.timeInForce,
+                                    reduceOnly: data.reduceOnly
+                                },
+                                {
+                                    market: currentMarket,
+                                    side: data.side === 'buy' ? 'sell' : 'buy',
+                                    amount: data.amount,
+                                    price: data.bracketTpPrice,
+                                    orderType: ORDER_TYPES.LIMIT,
+                                    reduceOnly: true
+                                },
+                                {
+                                    market: currentMarket,
+                                    side: data.side === 'buy' ? 'sell' : 'buy',
+                                    amount: data.amount,
+                                    triggerPrice: data.bracketSlPrice,
+                                    orderType: ORDER_TYPES.STOP_LOSS,
+                                    reduceOnly: true
+                                }
+                            ];
+                            await sdk.placeBatchOrders(orders, { groupingType: GROUPING_TYPES.ONE_TRIGGERS_OCO });
+                            alert('✅ Bracket Order placed! (Entry + TP + SL)');
+                            return;
+                        }
+                        
+                        // Handle OCO orders separately (batch order)
+                        if (data.orderType === 'oco') {
+                            const orders = [
+                                {
+                                    market: currentMarket,
+                                    side: data.side,
+                                    amount: data.amount,
+                                    price: data.takeProfitPrice,
+                                    orderType: ORDER_TYPES.LIMIT,
+                                    reduceOnly: true
+                                },
+                                {
+                                    market: currentMarket,
+                                    side: data.side,
+                                    amount: data.amount,
+                                    triggerPrice: data.stopLossPrice,
+                                    orderType: ORDER_TYPES.STOP_LOSS,
+                                    reduceOnly: true
+                                }
+                            ];
+                            await sdk.placeBatchOrders(orders, { groupingType: GROUPING_TYPES.ONE_CANCELS_OTHER });
+                            alert('✅ OCO Order placed!');
+                            return;
+                        }
+                        
+                        // Use SDK helper methods like the working app does
+                        let result;
+                        if (data.orderType === 'market') {
+                            // Market order - use helper
+                            const worstPrice = orderbookState.bids.length > 0 && orderbookState.asks.length > 0 
+                                ? (data.side === 'buy' ? orderbookState.asks[0].price : orderbookState.bids[0].price)
+                                : null;
+                            result = await sdk.placeMarketOrder(currentMarket, data.side, data.amount, worstPrice);
+                        } else if (data.orderType === 'limit') {
+                            // Limit order - use helper
+                            const postOnly = data.timeInForce === 2;
+                            result = await sdk.placeLimitOrder(currentMarket, data.side, data.amount, data.price, postOnly);
+                        } else if (data.orderType === 'stop-loss') {
+                            // Stop loss - use helper
+                            result = await sdk.placeStopLoss(currentMarket, data.side, data.amount, data.triggerPrice, data.limitPrice || null);
+                        } else if (data.orderType === 'take-profit') {
+                            // Take profit - use helper
+                            result = await sdk.placeTakeProfit(currentMarket, data.side, data.amount, data.triggerPrice, data.limitPrice || null);
+                        }
+                        
+                        alert(`✅ Order placed! TX: ${result?.tx_hash?.substring(0,16)}...`);
+                    } catch (e) { 
+                        console.error('[APP] Order error:', e);
+                        alert('❌ Error: ' + e.message); 
+                    }
+                },
+                onCancelOrder: async (marketId, orderIndex) => {
+                    if (!confirm('Cancel order?')) return;
+                    try { await sdk.cancelOrder({market: marketId, orderIndex}); alert('Cancelled!'); } catch (e) { alert('Error: ' + e.message); }
+                }
+            });
+        }
+
+        // Orderbook change handler
+        window.changeOrderbookMarket = function() {
+            currentMarket = parseInt(document.getElementById('marketSelect').value);
+            refreshOrderbook();
+        };
+        
+        window.refreshOrderbook = async function() {
+            if (!sdk) return;
+            
+            try {
+                const ob = await sdk.getOrderBook(currentMarket);
+                
+                // Populate orderbook state from REST API response (already normalized by SDK)
+                orderbookState.asks = (ob.asks || []).map(a => ({
+                    price: parseFloat(a.price),
+                    size: parseFloat(a.size)
+                })).filter(a => !isNaN(a.price) && !isNaN(a.size) && a.price > 0 && a.size > 0);
+                
+                orderbookState.bids = (ob.bids || []).map(b => ({
+                    price: parseFloat(b.price),
+                    size: parseFloat(b.size)
+                })).filter(b => !isNaN(b.price) && !isNaN(b.size) && b.price > 0 && b.size > 0);
+                
+                // Sort: asks ascending, bids descending
+                orderbookState.asks.sort((a, b) => a.price - b.price);
+                orderbookState.bids.sort((a, b) => b.price - a.price);
+                
+                // Display using the stateful display function
+                displayOrderbookFromState();
+            } catch (error) {
+                console.error('[APP] Orderbook error:', error);
+            }
+        };
+        
+        function displayOrderbookFromState() {
+            const list = document.getElementById('orderbook-list');
+            if (!list) return;
+
+            // Get top 12 from each side
+            const topAsks = orderbookState.asks.slice(0, 12).reverse();
+            const topBids = orderbookState.bids.slice(0, 12);
+            
+            let html = '<div style="font-family: monospace; font-size: 12px;">';
+            
+            // Asks (reversed - highest first)
+            topAsks.forEach(ask => {
+                html += `<div style="display: flex; justify-content: space-between; padding: 2px 0; color: #ef4444;">
+                    <span>${ask.price.toFixed(2)}</span>
+                    <span>${ask.size.toFixed(4)}</span>
+                </div>`;
+            });
+            
+            // Spread
+            if (topAsks.length > 0 && topBids.length > 0) {
+                const bestAsk = topAsks[0].price;
+                const bestBid = topBids[0].price;
+                const spread = bestAsk - bestBid;
+                const midPrice = (bestAsk + bestBid) / 2;
+                html += `<div style="padding: 8px 0; text-align: center; font-size: 11px; color: #f59e0b; border-top: 1px solid #2a2f4a; border-bottom: 1px solid #2a2f4a; margin: 4px 0;">
+                    Spread: $${spread.toFixed(2)} | Mid: $${midPrice.toFixed(2)}
+                </div>`;
+            }
+            
+            // Bids
+            topBids.forEach(bid => {
+                html += `<div style="display: flex; justify-content: space-between; padding: 2px 0; color: #10b981; cursor: pointer;" onclick="if(window.tradingPanelComp)tradingPanelComp.setPrice(${bid.price})">
+                    <span>${bid.price.toFixed(2)}</span>
+                    <span>${bid.size.toFixed(4)}</span>
+                </div>`;
+            });
+            
+            html += '</div>';
+            list.innerHTML = html;
+        }
+        
+        // Maintain full orderbook state
+        let orderbookState = {
+            asks: [],  // sorted ascending by price
+            bids: []   // sorted descending by price
+        };
+
+        async function loadMarkets() {
+            if (!sdk) {
+                console.error('[APP] SDK not initialized');
+                return;
+            }
+            
+            try {
+                console.log('[APP] Loading markets...');
+                const markets = await sdk.getMarkets();
+                const orderBooks = markets.order_books || [];
+                
+                console.log('[APP] Got', orderBooks.length, 'markets');
+                
+                const marketOptions = orderBooks
+                    .filter(m => m.symbol && m.symbol.length > 0)
+                    .map(m => `<option value="${m.market_id}">${m.symbol}</option>`)
+                    .join('');
+                
+                const select = document.getElementById('marketSelect');
+                select.innerHTML = marketOptions;
+                select.value = currentMarket; // Default to BTC
+                
+                console.log('[APP] Populated', orderBooks.length, 'markets to dropdown');
+                
+                // Initial orderbook load
+                refreshOrderbook();
+            } catch (e) {
+                console.error('[APP] Markets load error:', e);
+            }
+        }
+
+        async function startDataFeeds() {
+            // Load markets first
+            await loadMarkets();
+            
+            // Stats update
+            setInterval(async () => {
+                if (!sdk) return;
+                try {
+                    const markets = await sdk.getMarkets();
+                    const market = markets.order_books.find(m => m.market_id === currentMarket);
+                    if (market?.stats) {
+                        document.getElementById('markPrice').textContent = `$${parseFloat(market.stats.mark_price || 0).toFixed(2)}`;
+                        const change = parseFloat(market.stats.price_change_percent_24h || 0);
+                        const changeEl = document.getElementById('priceChange');
+                        changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                        changeEl.style.color = change >= 0 ? '#10b981' : '#ef4444';
+                        document.getElementById('volume24h').textContent = `$${(parseFloat(market.stats.volume_24h || 0) / 1000000).toFixed(1)}M`;
+                        document.getElementById('openInterest').textContent = `$${(parseFloat(market.stats.open_interest || 0) / 1000000).toFixed(1)}M`;
+                    }
+                } catch (e) {}
+            }, 5000);
+
+            // Orderbook update
+            setInterval(async () => {
+                if (!sdk) return;
+                refreshOrderbook();
+            }, 2000);
+
+            // Balance update
+            setInterval(async () => {
+                if (!sdk) return;
+                try {
+                    const balance = await sdk.getBalance();
+                    tradingPanelComp.updateBalance(parseFloat(balance.available_balance || 0), null);
+                } catch (e) {}
+            }, 10000);
+        }
+        
+        document.getElementById('marketSelect').addEventListener('change', changeOrderbookMarket);
+    </script>
+</body>
+</html>

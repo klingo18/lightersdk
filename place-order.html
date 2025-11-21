@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighter Exchange - Place Order</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Lighter Exchange</h1>
+            <p>Place BTC Long Order • Pure Browser • WASM Powered</p>
+        </div>
+
+        <div class="content">
+            <!-- WASM Status -->
+            <div id="wasmStatus" class="status loading">
+                <span class="spinner"></span> Loading WASM Signer...
+            </div>
+
+            <!-- Order Form -->
+            <div id="orderForm" style="display:none;">
+                <h2>Place BTC Long Order</h2>
+                
+                <div class="form-group">
+                    <label for="privateKey">Private Key</label>
+                    <input type="password" id="privateKey" 
+                           value="0eeb96ae31190f62423de7f3657ac19c74c513d507cb6006e92cda1f9a22ca11c269099fa0af904d"
+                           placeholder="0x...">
+                    <small>Your Lighter API key private key (40 bytes)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="btcAmount">BTC Amount</label>
+                    <input type="number" id="btcAmount" value="0.002" step="0.00001" min="0.0002">
+                    <small>Minimum: 0.0002 BTC</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="leverage">Leverage</label>
+                    <select id="leverage">
+                        <option value="50">50x (Max)</option>
+                        <option value="20">20x</option>
+                        <option value="10">10x</option>
+                        <option value="5">5x</option>
+                        <option value="2">2x</option>
+                    </select>
+                    <small>Higher leverage = higher risk</small>
+                </div>
+
+                <button class="btn btn-primary" onclick="placeOrder()" id="placeBtn">
+                    Place Long Order
+                </button>
+                
+                <button class="btn btn-secondary" onclick="clearResults()">
+                    Clear
+                </button>
+            </div>
+
+            <!-- Results -->
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script src="wasm_exec.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

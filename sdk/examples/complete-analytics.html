@@ -1,0 +1,95 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighter Analytics Dashboard</title>
+    <link rel="stylesheet" href="../dist/analytics-styles.css">
+</head>
+<body>
+    <div id="app" class="dashboard">
+        <header class="header">
+            <h1>📊 Lighter Analytics</h1>
+            <div class="header-actions">
+                <span id="accountInfo">--</span>
+                <button onclick="showSettings()">⚙️ Settings</button>
+            </div>
+        </header>
+
+        <!-- Exchange Stats -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <h3>24h Volume</h3>
+                <p id="stat-volume" class="stat-value">--</p>
+            </div>
+            <div class="stat-card">
+                <h3>Open Interest</h3>
+                <p id="stat-oi" class="stat-value">--</p>
+            </div>
+            <div class="stat-card">
+                <h3>Active Users</h3>
+                <p id="stat-users" class="stat-value">--</p>
+            </div>
+            <div class="stat-card">
+                <h3>Total Trades</h3>
+                <p id="stat-trades" class="stat-value">--</p>
+            </div>
+        </section>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Markets List -->
+            <div class="panel">
+                <h2>🌐 Markets</h2>
+                <div id="marketsList" class="markets-list"></div>
+            </div>
+
+            <!-- Orderbook -->
+            <div class="panel">
+                <h2>📖 Orderbook</h2>
+                <select id="obMarketSelect" onchange="changeOrderbookMarket()"></select>
+                <div id="orderbook" class="orderbook"></div>
+            </div>
+
+            <!-- Recent Trades -->
+            <div class="panel">
+                <h2>💹 Recent Trades</h2>
+                <div id="recentTrades" class="trades-feed"></div>
+            </div>
+
+            <!-- Funding Rates -->
+            <div class="panel">
+                <h2>💰 Funding Rates</h2>
+                <div id="fundingRates" class="funding-table"></div>
+            </div>
+
+            <!-- Your Positions -->
+            <div class="panel">
+                <h2>📊 Your Positions</h2>
+                <div id="positions" class="positions-list"></div>
+            </div>
+
+            <!-- Active Orders -->
+            <div class="panel">
+                <h2>📋 Active Orders</h2>
+                <div id="activeOrders" class="orders-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h2>Settings</h2>
+            <input type="password" id="privateKey" placeholder="Private Key">
+            <input type="number" id="accountIndex" placeholder="Account Index">
+            <input type="number" id="apiKeyIndex" placeholder="API Key Index">
+            <button onclick="saveSettings()">Save</button>
+            <button onclick="closeSettings()">Cancel</button>
+        </div>
+    </div>
+
+    <script src="../../dist/wasm_exec.js"></script>
+    <script type="module" src="../dist/analytics-app.js"></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "name": "@lighter/sdk",
+  "version": "1.0.0",
+  "description": "Lighter Protocol JavaScript SDK",
+  "type": "module",
+  "main": "sdk/core/lighter-sdk.js",
+  "exports": {
+    ".": "./sdk/core/lighter-sdk.js",
+    "./api": "./sdk/core/lighter-api.js",
+    "./ws": "./sdk/core/lighter-ws.js",
+    "./constants": "./sdk/core/constants.js"
+  },
+  "files": [
+    "sdk/",
+    "lighter.wasm",
+    "wasm_exec.js"
+  ],
+  "scripts": {
+    "dev": "python -m http.server 8080"
+  },
+  "keywords": ["lighter", "trading", "defi", "perpetuals", "sdk"],
+  "author": "Lighter Protocol",
+  "license": "MIT"
+}

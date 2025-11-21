@@ -1,0 +1,110 @@
+/* Orderbook Component Styles */
+.orderbook-panel {
+    background: #0f1419;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    width: 300px;
+    border-right: 1px solid #1a1f2e;
+}
+
+.orderbook-header {
+    padding: 15px;
+    border-bottom: 1px solid #1a1f2e;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #e0e0e0;
+}
+
+.orderbook-content {
+    flex: 1;
+    overflow-y: auto;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+}
+
+.orderbook-header-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 8px 15px;
+    font-size: 11px;
+    color: #666;
+    text-transform: uppercase;
+    border-bottom: 1px solid #1a1f2e;
+}
+
+.orderbook-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    padding: 3px 15px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+
+.orderbook-row:hover {
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.orderbook-row.ask {
+    background: linear-gradient(to right, rgba(239, 68, 68, 0.1) var(--depth), transparent var(--depth));
+}
+
+.orderbook-row.bid {
+    background: linear-gradient(to right, rgba(16, 185, 129, 0.1) var(--depth), transparent var(--depth));
+}
+
+.ob-price.ask { 
+    color: #ef4444;
+    font-weight: 600;
+}
+
+.ob-price.bid { 
+    color: #10b981;
+    font-weight: 600;
+}
+
+.ob-size { 
+    color: #9ca3af;
+    text-align: center;
+}
+
+.ob-total { 
+    color: #666;
+    text-align: right;
+}
+
+.spread-row {
+    padding: 10px 15px;
+    background: #1a1f2e;
+    border: 1px solid #2a2f4a;
+    margin: 5px;
+    text-align: center;
+    font-size: 13px;
+    color: #667eea;
+    font-weight: 600;
+}
+
+.orderbook-loading {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+}
+
+/* Scrollbar */
+.orderbook-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.orderbook-content::-webkit-scrollbar-track {
+    background: #0a0e1a;
+}
+
+.orderbook-content::-webkit-scrollbar-thumb {
+    background: #2a2f4a;
+    border-radius: 2px;
+}

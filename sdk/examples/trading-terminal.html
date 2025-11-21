@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighter Trading Terminal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0e1a; color: #e0e0e0; overflow: hidden; }
+        
+        /* Terminal Grid Layout */
+        .terminal-container {
+            display: grid;
+            grid-template-columns: 300px 1fr 350px;
+            grid-template-rows: 60px 1fr;
+            height: 100vh;
+            gap: 1px;
+            background: #000;
+        }
+        
+        /* Header */
+        .terminal-header {
+            grid-column: 1 / -1;
+            background: #0f1419;
+            border-bottom: 1px solid #1a1f2e;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 30px;
+        }
+        
+        .market-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .market-selector select {
+            background: #1a1f2e;
+            color: #e0e0e0;
+            border: 1px solid #2a2f4a;
+            padding: 8px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        
+        .market-stats {
+            display: flex;
+            gap: 25px;
+            margin-left: auto;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: #666;
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        /* Orderbook Panel */
+        .orderbook-panel {
+            background: #0f1419;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .panel-header {
+            padding: 15px;
+            border-bottom: 1px solid #1a1f2e;
+            font-size: 13px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .orderbook-content {
+            flex: 1;
+            overflow-y: auto;
+            font-size: 12px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .orderbook-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            padding: 3px 15px;
+            position: relative;
+        }
+        
+        .orderbook-row.ask {
+            background: linear-gradient(to right, rgba(239, 68, 68, 0.1) var(--depth), transparent var(--depth));
+        }
+        
+        .orderbook-row.bid {
+            background: linear-gradient(to right, rgba(16, 185, 129, 0.1) var(--depth), transparent var(--depth));
+        }
+        
+        .price.ask { color: #ef4444; }
+        .price.bid { color: #10b981; }
+        .size { color: #9ca3af; text-align: center; }
+        .total { color: #666; text-align: right; }
+        
+        .spread-row {
+            padding: 10px 15px;
+            background: #1a1f2e;
+            border: 1px solid #2a2f4a;
+            margin: 5px;
+            text-align: center;
+            font-size: 13px;
+        }
+        
+        /* Chart Panel */
+        .chart-panel {
+            background: #0f1419;
+            position: relative;
+        }
+        
+        #tradingview-chart {
+            width: 100%;
+            height: 100%;
+        }
+        
+        /* Trading Panel */
+        .trading-panel {
+            background: #0f1419;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .order-tabs {
+            display: flex;
+            border-bottom: 1px solid #1a1f2e;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 13px;
+            background: transparent;
+            border: none;
+            color: #666;
+            transition: all 0.2s;
+        }
+        
+        .tab.active {
+            color: #e0e0e0;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .order-form {
+            padding: 20px;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        
+        .form-input {
+            width: 100%;
+            background: #1a1f2e;
+            border: 1px solid #2a2f4a;
+            color: #e0e0e0;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .side-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .side-btn {
+            padding: 12px;
+            border: 1px solid #2a2f4a;
+            background: #1a1f2e;
+            color: #e0e0e0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .side-btn.buy.active {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+        
+        .side-btn.sell.active {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .submit-btn.buy {
+            background: #10b981;
+            color: white;
+        }
+        
+        .submit-btn.sell {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .submit-btn:hover {
+            opacity: 0.9;
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .slider {
+            width: 100%;
+            margin: 10px 0;
+        }
+        
+        .percentage-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* Open Orders */
+        .open-orders {
+            border-top: 1px solid #1a1f2e;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .order-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #1a1f2e;
+            font-size: 12px;
+        }
+        
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .order-details {
+            color: #666;
+            font-size: 11px;
+        }
+        
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #0a0e1a;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #2a2f4a;
+            border-radius: 3px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3a3f5a;
+        }
+    </style>
+</head>
+<body>
+    <div class="terminal-container">
+        <!-- Header -->
+        <div class="terminal-header">
+            <div class="market-selector">
+                <label class="stat-label">MARKET</label>
+                <select id="marketSelect">
+                    <option value="1">BTC-USD</option>
+                    <option value="0">ETH-USD</option>
+                </select>
+            </div>
+            <div class="market-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Mark Price</span>
+                    <span class="stat-value" id="markPrice">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">24h Change</span>
+                    <span class="stat-value" id="priceChange">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">24h Volume</span>
+                    <span class="stat-value" id="volume24h">--</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Open Interest</span>
+                    <span class="stat-value" id="openInterest">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Orderbook Panel -->
+        <div class="orderbook-panel">
+            <div class="panel-header">
+                <span>📖 Order Book</span>
+                <span id="obSpread">Spread: --</span>
+            </div>
+            <div class="orderbook-content" id="orderbookAsks"></div>
+            <div class="spread-row" id="spreadRow">--</div>
+            <div class="orderbook-content" id="orderbookBids"></div>
+        </div>
+
+        <!-- Chart Panel -->
+        <div class="chart-panel">
+            <div id="tradingview-chart"></div>
+        </div>
+
+        <!-- Trading Panel -->
+        <div class="trading-panel">
+            <div class="order-tabs">
+                <button class="tab active" onclick="switchTab('limit')">Limit</button>
+                <button class="tab" onclick="switchTab('market')">Market</button>
+                <button class="tab" onclick="switchTab('stop')">Stop</button>
+            </div>
+            
+            <div class="order-form">
+                <div class="side-buttons">
+                    <button class="side-btn buy active" onclick="selectSide('buy')">BUY</button>
+                    <button class="side-btn sell" onclick="selectSide('sell')">SELL</button>
+                </div>
+
+                <div class="form-group" id="priceGroup">
+                    <label class="form-label">Price (USD)</label>
+                    <input type="number" class="form-input" id="priceInput" placeholder="0.00" step="0.01">
+                </div>
+
+                <div class="form-group" id="triggerGroup" style="display: none;">
+                    <label class="form-label">Trigger Price (USD)</label>
+                    <input type="number" class="form-input" id="triggerInput" placeholder="0.00" step="0.01">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Amount</label>
+                    <input type="number" class="form-input" id="amountInput" placeholder="0.00" step="0.001">
+                </div>
+
+                <div class="form-group">
+                    <input type="range" class="slider" id="amountSlider" min="0" max="100" value="0">
+                    <div class="percentage-labels">
+                        <span>0%</span>
+                        <span>25%</span>
+                        <span>50%</span>
+                        <span>75%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="reduceOnlyCheckbox"> Reduce Only
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="postOnlyCheckbox"> Post Only
+                    </label>
+                </div>
+
+                <button class="submit-btn buy" id="submitBtn" onclick="placeOrder()">
+                    BUY BTC
+                </button>
+
+                <div style="margin-top: 15px; font-size: 12px; color: #666;">
+                    <div>Available: <span id="availableBalance">--</span></div>
+                    <div>Max: <span id="maxAmount">--</span></div>
+                </div>
+            </div>
+
+            <div class="open-orders">
+                <div class="panel-header">Open Orders</div>
+                <div id="openOrdersList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TradingView Widget -->
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    
+    <!-- SDK & WASM -->
+    <script src="../wasm/wasm_exec.js"></script>
+    <script type="module">
+        import { LighterSDK, ORDER_TYPES, TIME_IN_FORCE, ORDER_SIDES } from '../core/lighter-sdk.js';
+
+        let sdk = null;
+        let currentMarket = 1;
+        let currentSide = 'buy';
+        let currentOrderType = 'limit';
+        let tvWidget = null;
+
+        // Initialize
+        window.addEventListener('load', async () => {
+            await initWASM();
+            await initSDK();
+            initChart();
+            startDataFeeds();
+        });
+
+        async function initWASM() {
+            const go = new Go();
+            const result = await WebAssembly.instantiateStreaming(
+                fetch('../wasm/lighter.wasm'),
+                go.importObject
+            );
+            go.run(result.instance);
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        async function initSDK() {
+            const privateKey = prompt('Enter your private key:');
+            const accountIndex = parseInt(prompt('Enter your account index:'));
+
+            sdk = new LighterSDK({
+                privateKey: privateKey,
+                accountIndex: accountIndex,
+                network: 'mainnet'
+            });
+
+            await sdk.init();
+            await sdk.connectWebSocket(true);
+
+            // Subscribe to orders
+            await sdk.subscribeToAllOrders((message) => {
+                updateOpenOrders(message.orders);
+            });
+
+            console.log('SDK initialized');
+        }
+
+        function initChart() {
+            tvWidget = new TradingView.widget({
+                container_id: 'tradingview-chart',
+                library_path: 'https://s3.tradingview.com/tv.js',
+                symbol: 'BINANCE:BTCUSDT',
+                interval: '15',
+                theme: 'dark',
+                style: '1',
+                locale: 'en',
+                toolbar_bg: '#0f1419',
+                enable_publishing: false,
+                hide_side_toolbar: false,
+                allow_symbol_change: true,
+                studies: ['Volume@tv-basicstudies'],
+                disabled_features: ['header_symbol_search'],
+                enabled_features: ['study_templates'],
+                overrides: {
+                    "paneProperties.background": "#0f1419",
+                    "paneProperties.backgroundType": "solid",
+                }
+            });
+        }
+
+        async function startDataFeeds() {
+            // Market stats
+            setInterval(async () => {
+                try {
+                    const markets = await sdk.getMarkets();
+                    const market = markets.order_books.find(m => m.market_id === currentMarket);
+                    if (market && market.stats) {
+                        updateMarketStats(market.stats);
+                    }
+                } catch (e) {
+                    console.error('Market stats error:', e);
+                }
+            }, 5000);
+
+            // Orderbook
+            setInterval(async () => {
+                try {
+                    const ob = await sdk.getOrderBook(currentMarket);
+                    updateOrderbook(ob);
+                } catch (e) {
+                    console.error('Orderbook error:', e);
+                }
+            }, 1000);
+
+            // Balance
+            setInterval(async () => {
+                try {
+                    const balance = await sdk.getBalance();
+                    document.getElementById('availableBalance').textContent = 
+                        `$${parseFloat(balance.available_balance || 0).toFixed(2)}`;
+                } catch (e) {}
+            }, 10000);
+        }
+
+        function updateMarketStats(stats) {
+            document.getElementById('markPrice').textContent = 
+                `$${parseFloat(stats.mark_price || 0).toFixed(2)}`;
+            
+            const change = parseFloat(stats.price_change_percent_24h || 0);
+            const changeEl = document.getElementById('priceChange');
+            changeEl.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+            changeEl.style.color = change >= 0 ? '#10b981' : '#ef4444';
+
+            document.getElementById('volume24h').textContent = 
+                `$${(parseFloat(stats.volume_24h || 0) / 1000000).toFixed(1)}M`;
+            
+            document.getElementById('openInterest').textContent = 
+                `$${(parseFloat(stats.open_interest || 0) / 1000000).toFixed(1)}M`;
+        }
+
+        function updateOrderbook(ob) {
+            const asksDiv = document.getElementById('orderbookAsks');
+            const bidsDiv = document.getElementById('orderbookBids');
+
+            // Asks (reverse for display)
+            const asks = (ob.asks || []).slice(0, 15).reverse();
+            asksDiv.innerHTML = asks.map(order => {
+                const depth = (parseFloat(order.size) / 100) * 100;
+                return `<div class="orderbook-row ask" style="--depth: ${depth}%">
+                    <span class="price ask">${parseFloat(order.price).toFixed(2)}</span>
+                    <span class="size">${parseFloat(order.size).toFixed(4)}</span>
+                    <span class="total">${(parseFloat(order.price) * parseFloat(order.size)).toFixed(2)}</span>
+                </div>`;
+            }).join('');
+
+            // Spread
+            if (ob.asks && ob.asks.length > 0 && ob.bids && ob.bids.length > 0) {
+                const bestAsk = parseFloat(ob.asks[0].price);
+                const bestBid = parseFloat(ob.bids[0].price);
+                const spread = bestAsk - bestBid;
+                const spreadPct = (spread / bestBid) * 100;
+                document.getElementById('spreadRow').textContent = 
+                    `Spread: $${spread.toFixed(2)} (${spreadPct.toFixed(3)}%)`;
+            }
+
+            // Bids
+            const bids = (ob.bids || []).slice(0, 15);
+            bidsDiv.innerHTML = bids.map(order => {
+                const depth = (parseFloat(order.size) / 100) * 100;
+                return `<div class="orderbook-row bid" style="--depth: ${depth}%">
+                    <span class="price bid">${parseFloat(order.price).toFixed(2)}</span>
+                    <span class="size">${parseFloat(order.size).toFixed(4)}</span>
+                    <span class="total">${(parseFloat(order.price) * parseFloat(order.size)).toFixed(2)}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function updateOpenOrders(orders) {
+            const list = document.getElementById('openOrdersList');
+            const activeOrders = orders.filter(o => ['open', 'pending'].includes(o.status));
+            
+            list.innerHTML = activeOrders.map(o => `
+                <div class="order-item">
+                    <div class="order-header">
+                        <span style="color: ${o.side === 'BUY' ? '#10b981' : '#ef4444'}">
+                            ${o.symbol} ${o.side}
+                        </span>
+                        <button onclick="cancelOrder(${o.marketId}, ${o.orderIndex})" 
+                                style="background: #ef4444; border: none; color: white; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">
+                            Cancel
+                        </button>
+                    </div>
+                    <div class="order-details">
+                        ${o.size.toFixed(4)} @ $${o.price.toFixed(2)}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.switchTab = (type) => {
+            currentOrderType = type;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.getElementById('priceGroup').style.display = type === 'market' ? 'none' : 'block';
+            document.getElementById('triggerGroup').style.display = type === 'stop' ? 'block' : 'none';
+        };
+
+        window.selectSide = (side) => {
+            currentSide = side;
+            document.querySelectorAll('.side-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.className = `submit-btn ${side}`;
+            submitBtn.textContent = `${side.toUpperCase()} BTC`;
+        };
+
+        window.placeOrder = async () => {
+            if (!sdk) return alert('SDK not initialized');
+
+            const price = parseFloat(document.getElementById('priceInput').value);
+            const amount = parseFloat(document.getElementById('amountInput').value);
+            const triggerPrice = parseFloat(document.getElementById('triggerInput').value);
+            const reduceOnly = document.getElementById('reduceOnlyCheckbox').checked;
+            const postOnly = document.getElementById('postOnlyCheckbox').checked;
+
+            if (!amount || amount <= 0) return alert('Enter amount');
+            if (currentOrderType !== 'market' && (!price || price <= 0)) return alert('Enter price');
+
+            try {
+                const result = await sdk.placeOrder({
+                    market: currentMarket,
+                    side: currentSide === 'buy' ? ORDER_SIDES.BUY : ORDER_SIDES.SELL,
+                    amount: amount,
+                    price: price || 0,
+                    triggerPrice: triggerPrice || 0,
+                    orderType: currentOrderType === 'limit' ? ORDER_TYPES.LIMIT : 
+                               currentOrderType === 'market' ? ORDER_TYPES.MARKET : ORDER_TYPES.STOP_LOSS_LIMIT,
+                    timeInForce: postOnly ? TIME_IN_FORCE.POST_ONLY : TIME_IN_FORCE.GOOD_TILL_TIME,
+                    reduceOnly: reduceOnly
+                });
+
+                alert('Order placed! TX: ' + result.tx_hash?.substring(0, 16));
+                
+                // Clear form
+                document.getElementById('amountInput').value = '';
+                document.getElementById('priceInput').value = '';
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        };
+
+        window.cancelOrder = async (marketId, orderIndex) => {
+            if (!confirm('Cancel this order?')) return;
+            try {
+                await sdk.cancelOrder({ market: marketId, orderIndex: orderIndex });
+                alert('Order cancelled!');
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        };
+
+        // Slider
+        document.getElementById('amountSlider').addEventListener('input', (e) => {
+            const pct = parseInt(e.target.value);
+            // Calculate max amount based on balance and leverage
+            // For now just show percentage
+            console.log(`Set amount to ${pct}% of max`);
+        });
+
+        // Market selector
+        document.getElementById('marketSelect').addEventListener('change', (e) => {
+            currentMarket = parseInt(e.target.value);
+            console.log('Market changed to:', currentMarket);
+        });
+    </script>
+</body>
+</html>

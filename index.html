@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighter SDK</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0e1a; color: #e0e0e0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .container { max-width: 800px; padding: 40px; }
+        h1 { font-size: 48px; margin-bottom: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        p { font-size: 18px; color: #9ca3af; margin-bottom: 40px; }
+        .links { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        .link { padding: 20px; background: #1a1f2e; border: 1px solid #2a2f4a; border-radius: 12px; text-decoration: none; color: #e0e0e0; transition: all 0.2s; }
+        .link:hover { border-color: #667eea; transform: translateY(-2px); }
+        .link h3 { font-size: 20px; margin-bottom: 10px; color: #667eea; }
+        .link p { font-size: 14px; color: #71717a; margin: 0; }
+        .code { background: #0f1419; padding: 15px; border-radius: 8px; margin: 30px 0; font-family: 'Courier New', monospace; font-size: 14px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ Lighter SDK</h1>
+        <p>JavaScript SDK for Lighter Protocol - Decentralized Perpetual Trading</p>
+        
+        <div class="links">
+            <a href="sdk/examples/trading-terminal-modular.html" class="link">
+                <h3>🚀 Trading Terminal</h3>
+                <p>Full-featured terminal with orderbook, all order types, and live data</p>
+            </a>
+            
+            <a href="sdk/examples/full-trading-app.html" class="link">
+                <h3>📊 Full Trading App</h3>
+                <p>Complete example with positions, orders, and analytics</p>
+            </a>
+            
+            <a href="place-order.html" class="link">
+                <h3>📝 Simple Order</h3>
+                <p>Basic order placement example</p>
+            </a>
+        </div>
+
+        <div class="code">
+            <div style="color: #71717a; margin-bottom: 10px;">// Install & Use</div>
+            <div style="color: #10b981;">import { LighterSDK } from './sdk/core/lighter-sdk.js';</div>
+            <div style="color: #e0e0e0; margin-top: 10px;">const sdk = new LighterSDK({</div>
+            <div style="color: #e0e0e0; padding-left: 20px;">privateKey: '0x...',</div>
+            <div style="color: #e0e0e0; padding-left: 20px;">accountIndex: 123456,</div>
+            <div style="color: #e0e0e0; padding-left: 20px;">network: 'mainnet'</div>
+            <div style="color: #e0e0e0;">});</div>
+            <div style="color: #e0e0e0; margin-top: 10px;">await sdk.init();</div>
+            <div style="color: #71717a; margin-top: 10px;">// Place order</div>
+            <div style="color: #e0e0e0;">await sdk.placeMarketOrder(1, 'buy', 0.01);</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 40px; color: #71717a; font-size: 14px;">
+            <p>Built with ES6 Modules • No build step required • Deploy anywhere</p>
+        </div>
+    </div>
+</body>
+</html>

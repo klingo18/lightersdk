@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighter Trading Terminal</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0f1419;
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 32px 40px;
+        }
+        .header {
+            background: #1a1f2e;
+            padding: 24px 40px;
+            border-bottom: 1px solid #2a2f3f;
+            margin-bottom: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+        .creds-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .creds-btn:hover { background: rgba(255,255,255,0.3); }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 1200px) {
+            .grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        
+        .card {
+            background: #1a1f2e;
+            border: 1px solid #2a2f3f;
+            border-radius: 8px;
+            padding: 24px;
+        }
+        .card h2 {
+            color: #ffffff;
+            font-size: 16px;
+            margin-bottom: 24px;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #2a2f3f;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #9ca3af;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            background: #0a0e27;
+            border: 1px solid #2a2f4a;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+            border: 1px solid #10b981;
+        }
+        .btn-success:hover {
+            background: #059669;
+            border-color: #059669;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: 1px solid #ef4444;
+        }
+        .btn-danger:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+        .btn-buy {
+            background: #10b981;
+            color: white;
+            border: 1px solid #10b981;
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        .btn-sell {
+            background: #ef4444;
+            color: white;
+            border: 1px solid #ef4444;
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        
+        .status {
+            padding: 14px 24px;
+            border-radius: 6px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: center;
+            border: 1px solid;
+        }
+        .status.success { background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.3); }
+        .status.error { background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.3); }
+        .status.info { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border-color: rgba(59, 130, 246, 0.3); }
+        .status.loading { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border-color: rgba(245, 158, 11, 0.3); }    
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: #1a1f3a;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            border: 1px solid #2a2f4a;
+        }
+        
+        .info-box {
+            background: #0a0e27;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border-left: 3px solid #667eea;
+        }
+        .info-box h3 { color: #667eea; font-size: 14px; margin-bottom: 8px; }
+        .info-box p { color: #9ca3af; font-size: 13px; margin: 5px 0; }
+        .info-box .big { font-size: 24px; color: #e0e0e0; font-weight: 600; }
+        
+        .orders-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .order-item {
+            background: #0a0e27;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .order-item .info { flex: 1; }
+        .order-item .info span { display: block; font-size: 12px; color: #9ca3af; }
+        .order-item .actions { display: flex; gap: 5px; }
+        .order-item button { padding: 6px 12px; margin: 0; width: auto; font-size: 12px; }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            font-size: 14px;
+            color: #9ca3af;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .tab:hover { color: #e0e0e0; }
+        .tab.active { 
+            color: #667eea; 
+            border-bottom-color: #667eea;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        .advanced-options {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #2a2f4a;
+        }
+        .advanced-options.show { display: block; }
+        
+        pre {
+            background: #0a0e27;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            overflow-x: auto;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+            <h1>🚀 Lighter Trading Terminal</h1>
+            <div>
+                <span id="accountStatus" style="margin-right: 20px; font-size: 14px;"></span>
+                <button class="creds-btn" onclick="openCredentials()">⚙️ Settings</button>
+            </div>
+        </div>
+
+    <div class="container">
+        <div id="statusBar" class="status info">⏳ Loading WASM...</div>
+
+        <!-- WEBSOCKET STATUS -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h2>🔌 WebSocket Status</h2>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <span id="wsStatus" style="padding: 5px 15px; background: #ef4444; color: white; border-radius: 4px; font-size: 12px; font-weight: 600;">DISCONNECTED</span>
+                <button onclick="connectLiveData()" class="btn-success" id="wsConnectBtn">🔌 Connect Live Data</button>
+                <button onclick="disconnectLiveData()" class="btn-danger" style="display: none;" id="wsDisconnectBtn">❌ Disconnect</button>
+                <span id="wsLastUpdate" style="font-size: 12px; color: #9ca3af; margin-left: auto;">Last update: --</span>
+            </div>
+        </div>
+
+        <!-- EXCHANGE STATS -->
+        <div class="card" style="margin-bottom: 20px;">
+            <h2>📈 Exchange Overview</h2>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;" id="exchangeStats">
+                <div class="info-box"><h3>24h Volume</h3><p class="big" id="stat24hVolume">--</p></div>
+                <div class="info-box"><h3>Open Interest</h3><p class="big" id="statOpenInterest">--</p></div>
+                <div class="info-box"><h3>Total Trades</h3><p class="big" id="statTotalTrades">--</p></div>
+            </div>
+        </div>
+
+
+        <!-- MARKET DATA TABS -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div class="tabs">
+                <div class="tab active" onclick="selectDataTab('orderbook')">📖 Orderbook</div>
+                <div class="tab" onclick="selectDataTab('markets')">🌐 Markets</div>
+                <div class="tab" onclick="selectDataTab('funding')">💰 Funding</div>
+            </div>
+
+            <!-- Tab content wrapper -->
+            <div style="margin-top: 20px;">
+                <!-- ORDERBOOK TAB -->
+                <div id="tab-orderbook" class="tab-content active">
+                    <select id="obMarketSelect" onchange="changeOrderbookMarket()" style="width: 100%; padding: 10px; margin-bottom: 15px; background: #0a0e27; color: #e0e0e0; border: 1px solid #2a2f4a; border-radius: 6px; font-size: 14px;">
+                        <!-- Will be populated dynamically -->
+                    </select>
+                    <div style="font-size: 12px; color: #9ca3af; margin-bottom: 15px; text-align: center;">
+                        <span id="obUpdateMode">📡 Live Updates: OFF</span>
+                    </div>
+                    <div id="orderbook" style="max-height: 500px; overflow-y: auto;"></div>
+                </div>
+
+
+                <!-- MARKETS TAB -->
+                <div id="tab-markets" class="tab-content">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 10px; font-size: 11px; color: #9ca3af; font-weight: 600; border-bottom: 1px solid #2a2f3f; margin-bottom: 10px;">
+                        <div>MARKET</div>
+                        <div style="text-align: right;">PRICE</div>
+                        <div style="text-align: right;">24H CHANGE</div>
+                        <div style="text-align: right;">24H VOLUME</div>
+                        <div style="text-align: right;">OPEN INTEREST</div>
+                    </div>
+                    <div id="marketsList" style="max-height: 500px; overflow-y: auto;"></div>
+                    <button onclick="refreshMarkets()" class="btn-success" style="width: 100%; margin-top: 15px;">🔄 Refresh Markets</button>
+                </div>
+
+                <!-- FUNDING TAB -->
+                <div id="tab-funding" class="tab-content">
+                    <div id="fundingRates" style="max-height: 500px; overflow-y: auto;"></div>
+                    <button onclick="refreshFunding()" class="btn-success" style="width: 100%; margin-top: 15px;">🔄 Refresh Funding</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- PLACE ORDER -->
+            <div class="card">
+                <h2>📊 Place Order</h2>
+                <div class="tabs">
+                    <div class="tab active" onclick="selectOrderTab('market')">Market</div>
+                    <div class="tab" onclick="selectOrderTab('limit')">Limit</div>
+                    <div class="tab" onclick="selectOrderTab('stop')">Stop/TP</div>
+                </div>
+                
+                <div class="form-group">
+                    <select id="marketSelect" style="width: 100%; padding: 8px; margin-bottom: 10px; background: #0a0e27; color: #e0e0e0; border: 1px solid #2a2f4a; border-radius: 6px;">
+                    <!-- Will be populated dynamically -->
+                </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Side</label>
+                    <select id="orderSide">
+                        <option value="buy">Buy (Long)</option>
+                        <option value="sell">Sell (Short)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" id="orderAmount" placeholder="0.001" step="0.0001" value="0.002">
+                </div>
+                
+                <div id="limitPriceGroup" class="form-group" style="display:none;">
+                    <label>Price</label>
+                    <input type="number" id="orderPrice" placeholder="90000" step="0.1">
+                </div>
+                
+                <div id="triggerPriceGroup" class="form-group" style="display:none;">
+                    <label>Trigger Price</label>
+                    <input type="number" id="orderTriggerPrice" placeholder="85000" step="0.1">
+                </div>
+                
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="orderReduceOnly"> Reduce Only
+                    </label>
+                </div>
+                
+                <button onclick="placeOrder()">Place Order</button>
+                <div id="orderResult"></div>
+            </div>
+
+            <!-- ACCOUNT BALANCE -->
+            <div class="card">
+                <h2>💰 Account Balance</h2>
+                <div id="accountInfo">
+                    <div class="info-box">
+                        <h3>Available Balance</h3>
+                        <p class="big" id="balance">--</p>
+                        <p id="balanceDetails">Click refresh to load</p>
+                    </div>
+                    <div class="info-box" style="border-left: 3px solid #f59e0b;">
+                        <h3 style="color: #f59e0b;">🎁 Referral Stats</h3>
+                        <p id="referralStats" style="font-size: 12px;">Loading...</p>
+                    </div>
+                </div>
+                <button onclick="refreshAccount()" class="btn-success">🔄 Refresh</button>
+            </div>
+
+            <!-- POSITIONS & ORDERS COMBINED -->
+            <div class="card">
+                <h2>📊 Active Positions & Orders</h2>
+                
+                <!-- Active Positions Section -->
+                <div style="margin-bottom: 20px;">
+                    <h3 style="color: #10b981; font-size: 14px; margin-bottom: 10px; font-weight: 600;">
+                        💼 Active Positions (<span id="positionCount">0</span>)
+                    </h3>
+                    <div id="positions" style="max-height: 300px; overflow-y: auto;">
+                        <p style="color: #9ca3af; font-size: 13px;">No active positions</p>
+                    </div>
+                </div>
+
+                <!-- Open Orders Section -->
+                <div style="border-top: 1px solid #1a1f2e; padding-top: 20px;">
+                    <h3 style="color: #667eea; font-size: 14px; margin-bottom: 10px; font-weight: 600;">
+                        📋 Open Orders (<span id="orderCount">0</span>)
+                    </h3>
+                    <div id="ordersList" class="orders-list" style="max-height: 400px; overflow-y: auto;">
+                        <p style="color: #9ca3af; font-size: 13px;">No open orders</p>
+                    </div>
+                    <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button onclick="refreshOrders()" class="btn-success">🔄 Refresh Orders</button>
+                        <button onclick="cancelAllOrders()" class="btn-danger">❌ Cancel All</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <!-- LEVERAGE & MARGIN -->
+            <div class="card">
+                <h2>⚡ Leverage & Margin</h2>
+                <div class="form-group">
+                    <label>Market</label>
+                    <select id="leverageMarket">
+                        <option value="BTC">BTC-PERP</option>
+                        <option value="ETH">ETH-PERP</option>
+                        <option value="SOL">SOL-PERP</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Leverage (1-50x)</label>
+                    <input type="number" id="leverage" value="20" min="1" max="50">
+                </div>
+                <button onclick="setLeverage()">Set Leverage</button>
+                
+                <div style="margin-top: 20px;">
+                    <div class="form-group">
+                        <label>Margin Amount (USDC)</label>
+                        <input type="number" id="marginAmount" placeholder="100" step="1">
+                    </div>
+                    <button onclick="addMargin()" class="btn-success">Add Margin</button>
+                    <button onclick="removeMargin()" class="btn-warning">Remove Margin</button>
+                </div>
+                <div id="leverageResult"></div>
+            </div>
+
+            <!-- MODIFY ORDER -->
+            <div class="card">
+                <h2>✏️ Modify Order</h2>
+                <div class="form-group">
+                    <label>Order Index</label>
+                    <input type="number" id="modifyOrderIndex" placeholder="123456789">
+                </div>
+                <div class="form-group">
+                    <label>New Amount</label>
+                    <input type="number" id="modifyAmount" placeholder="0.003" step="0.0001">
+                </div>
+                <div class="form-group">
+                    <label>New Price</label>
+                    <input type="number" id="modifyPrice" placeholder="91000" step="0.1">
+                </div>
+                <button onclick="modifyOrder()">Modify Order</button>
+                <div id="modifyResult"></div>
+            </div>
+
+            <!-- WITHDRAW -->
+            <div class="card">
+                <h2>💸 Withdraw</h2>
+                <div class="form-group">
+                    <label>Amount (USDC)</label>
+                    <input type="number" id="withdrawAmount" placeholder="100" step="1">
+                </div>
+                <button onclick="withdraw()" class="btn-warning">Withdraw</button>
+                <div id="withdrawResult"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credentials Modal -->
+    <div id="credentialsModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 style="color: #667eea; margin-bottom: 20px;">⚙️ Settings</h2>
+            
+            <!-- Account Index Lookup Section -->
+            <div style="background: #1a1f2e; padding: 15px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #2a2f4a;">
+                <h3 style="font-size: 14px; margin-bottom: 10px; color: #667eea;">🔍 Find Account Index</h3>
+                <p style="font-size: 12px; color: #9ca3af; margin-bottom: 10px;">Enter your Ethereum address to auto-lookup your account index.</p>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="ethAddressLookup" placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb" style="flex: 1; padding: 10px; background: #0a0e27; border: 1px solid #2a2f4a; color: #e0e0e0; border-radius: 6px;">
+                    <button onclick="lookupAccountIndex()" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">Get Index</button>
+                </div>
+                <div id="lookupResult" style="margin-top: 10px; font-size: 12px;"></div>
+            </div>
+            
+            <!-- Credentials Form -->
+            <div class="form-group">
+                <label>Private Key (API Key)</label>
+                <input type="password" id="credPrivateKey" placeholder="0x...">
+            </div>
+            <div class="form-group">
+                <label>Account Index</label>
+                <input type="number" id="credAccountIndex" placeholder="123456" style="background: #1a1f2e;">
+                <div style="font-size: 11px; color: #9ca3af; margin-top: 4px;">↑ Auto-filled from lookup above</div>
+            </div>
+            <div class="form-group">
+                <label>API Key Index</label>
+                <input type="number" id="credApiKeyIndex" placeholder="0" value="0">
+            </div>
+            <button onclick="saveCredentials()" class="btn-success">💾 Save & Initialize</button>
+            <button onclick="closeCredentials()" class="btn-danger">Cancel</button>
+        </div>
+    </div>
+
+    <script src="../../dist/wasm_exec.js"></script>
+    <script type="module">
+        import { LighterSDK, ORDER_TYPES, TIME_IN_FORCE } from '../core/lighter-sdk.js';
+
+        let sdk = null;
+        let currentOrderType = 'limit';
+        let allOrders = []; // Store all orders from WebSocket
+        let ordersUpdateTime = null; // Last update timestamp
+        window.sdk = null;
+
+        // Load WASM
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                updateStatus('⏳ Loading WASM...', 'loading');
+                const go = new Go();
+                const wasm = await WebAssembly.instantiateStreaming(fetch('../../dist/lighter.wasm'), go.importObject);
+                go.run(wasm.instance);
+                
+                updateStatus('✅ WASM loaded!', 'success');
+                
+                // Load credentials
+                loadCredentials();
+            } catch (error) {
+                updateStatus(`❌ WASM load error: ${error.message}`, 'error');
+            }
+        });
+
+        // LocalStorage functions
+        function loadCredentials() {
+            const saved = localStorage.getItem('lighterCreds');
+            if (saved) {
+                try {
+                    const creds = JSON.parse(saved);
+                    document.getElementById('credPrivateKey').value = creds.privateKey || '';
+                    document.getElementById('credAccountIndex').value = creds.accountIndex || '';
+                    document.getElementById('credApiKeyIndex').value = creds.apiKeyIndex || '';
+                    
+                    // Auto-initialize if creds exist
+                    if (creds.privateKey && creds.accountIndex && creds.apiKeyIndex !== undefined) {
+                        initializeSDK(creds);
+                    }
+                } catch (e) {
+                    console.error('Failed to load credentials:', e);
+                }
+            }
+        }
+
+        window.saveCredentials = function() {
+            const creds = {
+                privateKey: document.getElementById('credPrivateKey').value.trim(),
+                accountIndex: parseInt(document.getElementById('credAccountIndex').value),
+                apiKeyIndex: parseInt(document.getElementById('credApiKeyIndex').value)
+            };
+            
+            if (!creds.privateKey || !creds.accountIndex || creds.apiKeyIndex === undefined) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            localStorage.setItem('lighterCreds', JSON.stringify(creds));
+            closeCredentials();
+            initializeSDK(creds);
+        };
+
+        async function initializeSDK(creds) {
+            try {
+                updateStatus('⏳ Initializing SDK...', 'loading');
+                
+                sdk = new LighterSDK({
+                    privateKey: creds.privateKey,
+                    accountIndex: creds.accountIndex,
+                    apiKeyIndex: creds.apiKeyIndex,
+                    network: 'mainnet'
+                });
+
+                await sdk.init();
+                window.sdk = sdk;
+                
+                updateStatus('✅ SDK Ready - Connected to Lighter', 'success');
+                document.getElementById('accountStatus').textContent = `Account: ${creds.accountIndex}`;
+                
+                // Auto-load all data
+                refreshAccount();
+                refreshReferralStats();
+                refreshExchangeStats();
+                refreshMarkets();
+                initAnalytics();
+                
+                // Connect WebSocket and subscribe to orders
+                console.log('[APP] Connecting WebSocket for order updates...');
+                await sdk.connectWebSocket(true);
+                
+                // Subscribe to ALL orders across ALL markets
+                await sdk.subscribeToAllOrders((message) => {
+                    console.log('[APP] Orders update received:', message);
+                    handleOrdersUpdate(message);
+                });
+                
+                console.log('[APP] WebSocket order subscription active');
+            } catch (error) {
+                updateStatus(`❌ SDK init error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Handle WebSocket order updates
+        function handleOrdersUpdate(message) {
+            try {
+                // SDK now returns normalized data: { orders: [NormalizedOrder], orderCount: 99 }
+                allOrders = message.orders || [];
+                ordersUpdateTime = new Date();
+                
+                console.log(`[APP] Received ${message.orderCount || allOrders.length} normalized orders from SDK`);
+                
+                // Update display
+                displayOrdersFromWebSocket();
+            } catch (error) {
+                console.error('[APP] Error handling orders update:', error);
+            }
+        }
+
+        window.openCredentials = () => document.getElementById('credentialsModal').classList.add('active');
+        window.closeCredentials = function() {
+            document.getElementById('credentialsModal').classList.remove('active');
+        };
+
+        // Lookup Account Index from Ethereum Address  
+        window.lookupAccountIndex = async function() {
+            const ethAddress = document.getElementById('ethAddressLookup').value.trim();
+            const resultDiv = document.getElementById('lookupResult');
+            const accountIndexInput = document.getElementById('credAccountIndex');
+            
+            // Clear previous results
+            resultDiv.innerHTML = '';
+            
+            // Validate address
+            if (!ethAddress) {
+                resultDiv.innerHTML = '<span style="color: #ef4444;">Please enter an Ethereum address</span>';
+                return;
+            }
+            
+            if (!ethAddress.startsWith('0x') || ethAddress.length !== 42) {
+                resultDiv.innerHTML = '<span style="color: #ef4444;">Invalid Ethereum address format (must be 0x... and 42 characters)</span>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<span style="color: #667eea;">🔍 Looking up account index...</span>';
+                
+                // Create temporary SDK instance (no account index needed for lookup)
+                const network = document.getElementById('networkSelect').value;
+                const tempSDK = new LighterSDK({ network: network });
+                await tempSDK.init();
+                
+                // Lookup account index
+                const result = await tempSDK.getAccountIndexFromAddress(ethAddress);
+                
+                // Auto-fill the account index field
+                accountIndexInput.value = result.accountIndex;
+                accountIndexInput.style.background = '#0f3a2e';
+                
+                // Show success message with sub-account info
+                resultDiv.innerHTML = `
+                    <div style="color: #10b981;">
+                        ✅ Found! Account Index: <strong>${result.accountIndex}</strong>
+                    </div>
+                    <div style="color: #9ca3af; margin-top: 5px;">
+                        Total sub-accounts: ${result.subAccounts.length} | Address verified
+                    </div>
+                `;
+                
+                updateStatus(`✅ Account index ${result.accountIndex} auto-filled`, 'success');
+                
+            } catch (error) {
+                console.error('Lookup error:', error);
+                accountIndexInput.value = '';
+                accountIndexInput.style.background = '#0a0e27';
+                
+                if (error.message.includes('No account found')) {
+                    resultDiv.innerHTML = '<span style="color: #ef4444;">❌ No Lighter account found for this address. Please register first.</span>';
+                } else {
+                    resultDiv.innerHTML = `<span style="color: #ef4444;">❌ Error: ${error.message}</span>`;
+                }
+            }
+        };
+
+        // Save Credentials
+        window.saveCredentials = async function() {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            event.target.classList.add('active');
+        };
+
+        // Data tabs
+        window.selectDataTab = function(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            event.target.classList.add('active');
+        };
+
+        // Order tabs
+        window.selectOrderTab = function(type) {
+            currentOrderType = type;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('limitPriceGroup').style.display = (type === 'limit' || type === 'stop') ? 'block' : 'none';
+            document.getElementById('triggerPriceGroup').style.display = (type === 'stop') ? 'block' : 'none';
+        };
+
+        // Place Order
+        window.placeOrder = async function() {
+            if (!sdk) { alert('Initialize SDK first (click Settings)'); return; }
+            
+            try {
+                const market = document.getElementById('orderMarket').value;
+                const side = document.getElementById('orderSide').value;
+                const amount = parseFloat(document.getElementById('orderAmount').value);
+                const price = parseFloat(document.getElementById('orderPrice').value) || 0;
+                const triggerPrice = parseFloat(document.getElementById('orderTriggerPrice').value) || 0;
+                const reduceOnly = document.getElementById('orderReduceOnly').checked;
+                
+                showResult('orderResult', '⏳ Placing order...', 'loading');
+                
+                let result;
+                if (currentOrderType === 'market') {
+                    result = await sdk.placeMarketOrder(market, side, amount);
+                } else if (currentOrderType === 'limit') {
+                    result = await sdk.placeLimitOrder(market, side, amount, price);
+                } else if (currentOrderType === 'stop') {
+                    if (side === 'sell') {
+                        result = await sdk.placeStopLoss(market, side, amount, triggerPrice, price || null);
+                    } else {
+                        result = await sdk.placeTakeProfit(market, side, amount, triggerPrice, price || null);
+                    }
+                }
+                
+                showResult('orderResult', `✅ Order placed! TX: ${result.tx_hash?.substring(0,16)}...`, 'success');
+                setTimeout(() => refreshOrders(), 1000);
+            } catch (error) {
+                showResult('orderResult', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Refresh Referral Stats
+        window.refreshReferralStats = async function() {
+            if (!sdk) return;
+            
+            try {
+                const stats = await sdk.getReferralPoints(true);
+                const text = `${stats.userTotalPoints.toFixed(0)} pts (${stats.referrals.length} refs) | ${stats.rewardPointMultiplier.toFixed(2)}x multiplier`;
+                document.getElementById('referralStats').textContent = text;
+            } catch (error) {
+                console.error('[APP] Referral stats error:', error);
+                document.getElementById('referralStats').textContent = 'Error loading stats';
+            }
+        };
+        
+        // Refresh Account
+        window.refreshAccount = async function() {
+            if (!sdk) { alert('Initialize SDK first'); return; }
+            
+            try {
+                console.log('[APP] Fetching account data...');
+                const account = await sdk.getAccount();
+                console.log('[APP] Account response:', account);
+                
+                const accountData = account.accounts?.[0] || {};
+                console.log('[APP] Account data:', accountData);
+                
+                // Balance is already in USD, no conversion needed
+                const available = parseFloat(accountData.available_balance || 0);
+                const total = parseFloat(accountData.collateral || 0);
+                
+                document.getElementById('balance').textContent = `$${available.toFixed(2)}`;
+                document.getElementById('balanceDetails').textContent = `Total: $${total.toFixed(2)} | Status: ${accountData.status === 1 ? 'Active' : 'Inactive'}`;
+                
+                // Get positions from SDK (API call, not WebSocket)
+                const positionsResult = await sdk.getPositions();
+                const allPositions = positionsResult.account_positions || [];
+                console.log('[APP] All Positions from API:', allPositions);
+                
+                // Filter for ACTIVE positions only (size > 0)
+                window.activePositions = allPositions.filter(p => p.hasPosition);
+                console.log('[APP] Active Positions:', window.activePositions);
+                
+                // Display in styled format (call combined display function)
+                displayPositionsAndOrders();
+                
+                // Update position count badge
+                document.getElementById('positionCount').textContent = window.activePositions.length;
+                
+                updateStatus(`✅ Account refreshed | ${window.activePositions.length} active positions | Available: $${available.toFixed(2)}`, 'success');
+            } catch (error) {
+                console.error('[APP] Refresh error:', error);
+                updateStatus(`❌ Account refresh error: ${error.message}`, 'error');
+            }
+        };
+
+        // Refresh Orders - Now just triggers display from WebSocket data
+        window.refreshOrders = function() {
+            if (!sdk) { alert('Initialize SDK first'); return; }
+            
+            if (allOrders.length === 0) {
+                const list = document.getElementById('ordersList');
+                list.innerHTML = '<p style="color: #9ca3af; font-size: 13px;">No orders (waiting for WebSocket data...)</p>';
+                updateStatus('ℹ️ Waiting for order data from WebSocket', 'info');
+                return;
+            }
+            
+            displayOrdersFromWebSocket();
+        };
+        
+        // Combined display for positions and orders
+        function displayPositionsAndOrders() {
+            const positionsDiv = document.getElementById('positions');
+            const positions = window.activePositions || [];
+            
+            if (positions.length === 0) {
+                positionsDiv.innerHTML = '<div style="color: #9ca3af; font-size: 13px;">No active positions</div>';
+            } else {
+                positionsDiv.innerHTML = positions.map(p => {
+                    const pnlColor = p.unrealized_pnl >= 0 ? '#10b981' : '#ef4444';
+                    const pnlSign = p.unrealized_pnl >= 0 ? '+' : '';
+                    return `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; padding: 12px; background: #1a1f2e; margin: 8px 0; border-radius: 6px; border: 1px solid #2a2f3f; align-items: center;">
+                            <div>
+                                <strong style="color: #10b981;">${p.symbol}</strong>
+                                <div style="font-size: 11px; color: #9ca3af;">${p.side} ${p.size.toFixed(4)}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 11px; color: #666;">Entry</div>
+                                <div style="font-weight: 600;">$${p.avg_entry_price.toFixed(2)}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 11px; color: #666;">PnL</div>
+                                <div style="font-weight: 600; color: ${pnlColor};">${pnlSign}$${p.unrealized_pnl.toFixed(2)}</div>
+                            </div>
+                            <div style="text-align: right; font-size: 11px; color: #9ca3af;">
+                                ${p.open_order_count > 0 ? `${p.open_order_count} orders` : 'No orders'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+        
+        // Display orders from WebSocket state
+        function displayOrdersFromWebSocket() {
+            try {
+                const list = document.getElementById('ordersList');
+                
+                if (allOrders.length === 0) {
+                    list.innerHTML = '<p style="color: #9ca3af; font-size: 13px;">No open orders</p>';
+                    updateStatus('ℹ️ No open orders', 'info');
+                    return;
+                }
+                
+                console.log(`[APP] Displaying ${allOrders.length} normalized orders`);
+                
+                // Classify orders by type and status (using SDK-normalized data)
+                const regularOrders = [];
+                const stopLossOrders = [];
+                const takeProfitOrders = [];
+                const reduceOnlyOrders = [];
+                
+                allOrders.forEach((o) => {
+                    // Check if order is active - accept 'open', 'pending', or 'in-progress'
+                    // 'pending' = conditional orders waiting to trigger (SL/TP)
+                    // 'open' = active limit orders in orderbook
+                    const activeStatuses = ['open', 'pending', 'in-progress'];
+                    if (!activeStatuses.includes(o.status)) {
+                        return;
+                    }
+                    
+                    // Use SDK-normalized flags for classification
+                    if (o.isStopLoss) {
+                        stopLossOrders.push(o);
+                    } else if (o.isTakeProfit) {
+                        takeProfitOrders.push(o);
+                    } else if (o.reduceOnly && !o.isConditional) {
+                        reduceOnlyOrders.push(o);
+                    } else if (!o.isConditional && !o.hasParent) {
+                        regularOrders.push(o);
+                    }
+                });
+                
+                console.log('[APP] Order groups:', {
+                    regular: regularOrders.length,
+                    stopLoss: stopLossOrders.length,
+                    takeProfit: takeProfitOrders.length,
+                    reduceOnly: reduceOnlyOrders.length
+                });
+                
+                // Helper to format order display (using SDK-normalized data)
+                const formatOrder = (o) => {
+                    const sideClass = o.side === 'BUY' ? 'bid-price' : 'ask-price';
+                    
+                    // Build comprehensive order info
+                    const priceInfo = o.triggerPrice 
+                        ? `Trigger: $${o.triggerPrice.toFixed(2)} → ${o.executionType === 'market' ? 'Market' : 'Limit: $' + o.price.toFixed(2)}`
+                        : `$${o.price.toFixed(2)}`;
+                    
+                    const fillInfo = o.fillPercentage > 0 ? ` | ${o.fillPercentage.toFixed(1)}% filled` : '';
+                    
+                    // Build tags
+                    const tags = [];
+                    if (o.reduceOnly) tags.push('<span style="background: #854d0e; color: #fef3c7; padding: 2px 6px; border-radius: 3px; font-size: 10px;">R/O</span>');
+                    if (o.postOnly) tags.push('<span style="background: #1e3a8a; color: #dbeafe; padding: 2px 6px; border-radius: 3px; font-size: 10px;">POST</span>');
+                    if (o.ioc) tags.push('<span style="background: #7c2d12; color: #fed7aa; padding: 2px 6px; border-radius: 3px; font-size: 10px;">IOC</span>');
+                    if (o.executionType === 'market') tags.push('<span style="background: #166534; color: #bbf7d0; padding: 2px 6px; border-radius: 3px; font-size: 10px;">MARKET</span>');
+                    if (o.executionType === 'limit') tags.push('<span style="background: #1e40af; color: #dbeafe; padding: 2px 6px; border-radius: 3px; font-size: 10px;">LIMIT</span>');
+                    if (o.marginMode === 'ISOLATED') tags.push('<span style="background: #713f12; color: #fde68a; padding: 2px 6px; border-radius: 3px; font-size: 10px;">ISO</span>');
+                    if (o.isOco) tags.push('<span style="background: #831843; color: #fbcfe8; padding: 2px 6px; border-radius: 3px; font-size: 10px;">OCO</span>');
+                    if (o.hasChildren) tags.push('<span style="background: #4c1d95; color: #e9d5ff; padding: 2px 6px; border-radius: 3px; font-size: 10px;">OTO</span>');
+                    
+                    const tagsHtml = tags.length > 0 ? ' ' + tags.join(' ') : '';
+                    
+                    // Trigger status for conditional orders
+                    const triggerStatusInfo = o.isConditional && o.triggerStatus !== 'N/A' 
+                        ? `<div style="font-size: 11px; color: #60a5fa; margin-top: 2px;">Status: ${o.triggerStatus}</div>`
+                        : '';
+                    
+                    // Grouping info
+                    const groupingInfo = [];
+                    if (o.hasParent) groupingInfo.push(`Parent: ${o.parentOrderIndex}`);
+                    if (o.childTpId) groupingInfo.push(`TP Child: ${o.childTpId}`);
+                    if (o.childSlId) groupingInfo.push(`SL Child: ${o.childSlId}`);
+                    if (o.cancelOrderId) groupingInfo.push(`Cancels: ${o.cancelOrderId}`);
+                    const groupingHtml = groupingInfo.length > 0 
+                        ? `<div style="font-size: 10px; color: #9ca3af; margin-top: 2px;">${groupingInfo.join(' | ')}</div>`
+                        : '';
+                    
+                    return `
+                        <div class="order-item" style="margin-bottom: 8px; padding: 10px; background: #0a0e27; border: 1px solid #2a2f4a; border-radius: 6px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start;">
+                                <div style="flex: 1;">
+                                    <div style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">
+                                        <span style="color: #e0e0e0;">${o.symbol}</span>
+                                        <span class="${sideClass}" style="margin-left: 8px;">${o.side}</span>
+                                        <span style="color: #9ca3af; margin-left: 8px;">${o.size.toFixed(4)}</span>
+                                        ${tagsHtml}
+                                    </div>
+                                    <div style="font-size: 12px; color: #9ca3af;">
+                                        ${priceInfo}${fillInfo}
+                                    </div>
+                                    ${triggerStatusInfo}
+                                    ${groupingHtml}
+                                    <div style="font-size: 10px; color: #6b7280; margin-top: 4px;">
+                                        Index: ${o.orderIndex} | TIF: ${o.timeInForce}
+                                    </div>
+                                </div>
+                                <div>
+                                    <button onclick="cancelOrder(${o.marketId}, ${o.orderIndex})" class="btn-danger" style="padding: 6px 12px; font-size: 12px;">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                };
+                
+                // Build grouped HTML
+                let html = '';
+                
+                if (regularOrders.length > 0) {
+                    html += `
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="color: #667eea; font-size: 14px; margin-bottom: 10px; font-weight: 600;">
+                                📋 Limit Orders (${regularOrders.length})
+                            </h3>
+                            ${regularOrders.map(formatOrder).join('')}
+                        </div>
+                    `;
+                }
+                
+                if (stopLossOrders.length > 0) {
+                    html += `
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="color: #ef4444; font-size: 14px; margin-bottom: 10px; font-weight: 600;">
+                                🛑 Stop Loss Orders (${stopLossOrders.length})
+                            </h3>
+                            ${stopLossOrders.map(formatOrder).join('')}
+                        </div>
+                    `;
+                }
+                
+                if (takeProfitOrders.length > 0) {
+                    html += `
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="color: #10b981; font-size: 14px; margin-bottom: 10px; font-weight: 600;">
+                                🎯 Take Profit Orders (${takeProfitOrders.length})
+                            </h3>
+                            ${takeProfitOrders.map(formatOrder).join('')}
+                        </div>
+                    `;
+                }
+                
+                if (reduceOnlyOrders.length > 0) {
+                    html += `
+                        <div style="margin-bottom: 20px;">
+                            <h3 style="color: #f59e0b; font-size: 14px; margin-bottom: 10px; font-weight: 600;">
+                                ⚠️ Reduce-Only Orders (${reduceOnlyOrders.length})
+                            </h3>
+                            ${reduceOnlyOrders.map(formatOrder).join('')}
+                        </div>
+                    `;
+                }
+                
+                list.innerHTML = html;
+                
+                const totalOpen = regularOrders.length + stopLossOrders.length + takeProfitOrders.length + reduceOnlyOrders.length;
+                const updateTime = ordersUpdateTime ? ordersUpdateTime.toLocaleTimeString() : '';
+                const summary = `✅ ${totalOpen} open orders (${regularOrders.length} limit, ${stopLossOrders.length} SL, ${takeProfitOrders.length} TP) | Updated: ${updateTime}`;
+                updateStatus(summary, 'success');
+                
+                // Update order count badge
+                document.getElementById('orderCount').textContent = totalOpen;
+                
+                // Update position count badge
+                document.getElementById('positionCount').textContent = (window.activePositions || []).length;
+            } catch (error) {
+                console.error('[APP] Display orders error:', error);
+                updateStatus(`❌ Display error: ${error.message}`, 'error');
+            }
+        }
+
+        // Cancel Order
+        window.cancelOrder = async function(marketId, orderIndex) {
+            if (!sdk) return;
+            
+            try {
+                await sdk.cancelOrder({ market: marketId, orderIndex: orderIndex });
+                updateStatus('✅ Order cancelled', 'success');
+                setTimeout(() => refreshOrders(), 500);
+            } catch (error) {
+                updateStatus(`❌ Cancel error: ${error.message}`, 'error');
+            }
+        };
+
+        // Cancel All
+        window.cancelAllOrders = async function() {
+            if (!sdk) return;
+            if (!confirm('Cancel ALL orders?')) return;
+            
+            try {
+                updateStatus('⏳ Cancelling all orders...', 'loading');
+                await sdk.cancelAllOrders();
+                updateStatus('✅ All orders cancelled', 'success');
+                setTimeout(() => refreshOrders(), 500);
+            } catch (error) {
+                updateStatus(`❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Set Leverage
+        window.setLeverage = async function() {
+            if (!sdk) return;
+            
+            try {
+                const market = document.getElementById('leverageMarket').value;
+                const leverage = parseInt(document.getElementById('leverage').value);
+                
+                showResult('leverageResult', '⏳ Setting leverage...', 'loading');
+                await sdk.setLeverage(market, leverage);
+                showResult('leverageResult', `✅ Leverage set to ${leverage}x`, 'success');
+            } catch (error) {
+                showResult('leverageResult', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Add Margin
+        window.addMargin = async function() {
+            if (!sdk) return;
+            
+            try {
+                const market = document.getElementById('leverageMarket').value;
+                const amount = parseFloat(document.getElementById('marginAmount').value);
+                
+                showResult('leverageResult', '⏳ Adding margin...', 'loading');
+                await sdk.updateMargin(market, amount, 1); // 1 = ADD
+                showResult('leverageResult', `✅ Added $${amount} margin`, 'success');
+            } catch (error) {
+                showResult('leverageResult', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Remove Margin
+        window.removeMargin = async function() {
+            if (!sdk) return;
+            
+            try {
+                const market = document.getElementById('leverageMarket').value;
+                const amount = parseFloat(document.getElementById('marginAmount').value);
+                
+                showResult('leverageResult', '⏳ Removing margin...', 'loading');
+                await sdk.updateMargin(market, amount, 0); // 0 = REMOVE
+                showResult('leverageResult', `✅ Removed $${amount} margin`, 'success');
+            } catch (error) {
+                showResult('leverageResult', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Modify Order
+        window.modifyOrder = async function() {
+            if (!sdk) return;
+            
+            try {
+                const market = document.getElementById('leverageMarket').value;
+                const orderIndex = parseInt(document.getElementById('modifyOrderIndex').value);
+                const amount = parseFloat(document.getElementById('modifyAmount').value);
+                const price = parseFloat(document.getElementById('modifyPrice').value);
+                
+                showResult('modifyResult', '⏳ Modifying order...', 'loading');
+                await sdk.modifyOrder({ market, orderIndex, amount, price });
+                showResult('modifyResult', '✅ Order modified', 'success');
+            } catch (error) {
+                showResult('modifyResult', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Withdraw
+        window.withdraw = async function() {
+            if (!sdk) return;
+            if (!confirm('Confirm withdrawal?')) return;
+            
+            try {
+                const amount = parseFloat(document.getElementById('withdrawAmount').value);
+                
+                showResult('withdrawResult', '⏳ Processing withdrawal...', 'loading');
+                await sdk.withdraw(amount);
+                showResult('withdrawResult', `✅ Withdrawal of $${amount} submitted`, 'success');
+            } catch (error) {
+                showResult('withdrawResult', `❌ Error: ${error.message}`, 'error');
+            }
+        };
+
+        // Helpers
+        function updateStatus(msg, type) {
+            const el = document.getElementById('statusBar');
+            el.textContent = msg;
+            el.className = `status ${type}`;
+        }
+
+        function showResult(id, msg, type) {
+            const el = document.getElementById(id);
+            el.innerHTML = `<div class="status ${type}">${msg}</div>`;
+        }
+
+        // === ANALYTICS FUNCTIONS ===
+
+        window.refreshMarkets = async function() {
+            if (!sdk) return;
+            
+            try {
+                console.log('[APP] Fetching markets and stats...');
+                
+                // Fetch both in parallel
+                const [markets, statsData] = await Promise.all([
+                    sdk.getMarkets(),
+                    sdk.getExchangeStats()
+                ]);
+                
+                console.log('[APP] Markets:', markets);
+                console.log('[APP] Stats:', statsData);
+                
+                const list = document.getElementById('marketsList');
+                const orderBooks = markets.order_books || [];
+                
+                // Create stats map
+                const statsMap = {};
+                (statsData.order_book_stats || []).forEach(s => {
+                    statsMap[s.market_id] = s;
+                });
+                
+                // Populate market dropdowns
+                const obSelect = document.getElementById('obMarketSelect');
+                const tradeSelect = document.getElementById('marketSelect');
+                const leverageSelect = document.getElementById('leverageMarket');
+                const marginSelect = document.getElementById('marginMarket');
+                
+                const marketOptions = orderBooks
+                    .filter(m => m.symbol && m.symbol.length > 0)
+                    .map(m => `<option value="${m.market_id}">${m.symbol}</option>`)
+                    .join('');
+                
+                console.log('[APP] Populating', orderBooks.length, 'markets to dropdowns');
+                
+                if (obSelect) {
+                    obSelect.innerHTML = marketOptions;
+                    obSelect.value = '1'; // BTC
+                }
+                if (tradeSelect) {
+                    tradeSelect.innerHTML = marketOptions;
+                    tradeSelect.value = '1'; // BTC
+                }
+                if (leverageSelect) {
+                    leverageSelect.innerHTML = marketOptions;
+                    leverageSelect.value = '1'; // BTC
+                }
+                if (marginSelect) {
+                    marginSelect.innerHTML = marketOptions;
+                    marginSelect.value = '1'; // BTC
+                }
+                
+                // Display top 50 markets with stats  
+                list.innerHTML = orderBooks
+                    .map(m => {
+                        const stats = statsMap[m.market_id] || {};
+                        return { ...m, stats };
+                    })
+                    .filter(m => m.stats.mark_price) // Only show markets with price data
+                    .sort((a, b) => parseFloat(b.stats.volume_24h || 0) - parseFloat(a.stats.volume_24h || 0)) // Sort by volume
+                    .slice(0, 50)
+                    .map(m => {
+                        const price = parseFloat(m.stats.mark_price || 0);
+                        const change = parseFloat(m.stats.price_change_percent_24h || 0);
+                        const changeColor = change >= 0 ? '#10b981' : '#ef4444';
+                        const volume = parseFloat(m.stats.volume_24h || 0);
+                        const volumeStr = volume > 1000000 ? `$${(volume / 1000000).toFixed(1)}M` : `$${volume.toFixed(0)}`;
+                        const oi = parseFloat(m.stats.open_interest || 0);
+                        const oiStr = oi > 1000000 ? `$${(oi / 1000000).toFixed(1)}M` : `$${oi.toFixed(0)}`;
+                        
+                        return `
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 10px; padding: 12px; background: #1a1f2e; margin: 8px 0; border-radius: 6px; border: 1px solid #2a2f3f; align-items: center;">
+                                <div><strong>${m.symbol || 'Market ' + m.market_id}</strong></div>
+                                <div style="text-align: right; font-weight: 600;">$${price.toFixed(2)}</div>
+                                <div style="text-align: right; color: ${changeColor}; font-weight: 600;">${change >= 0 ? '+' : ''}${change.toFixed(2)}%</div>
+                                <div style="text-align: right; font-size: 12px; color: #9ca3af;">Vol: ${volumeStr}</div>
+                                <div style="text-align: right; font-size: 12px; color: #9ca3af;">OI: ${oiStr}</div>
+                            </div>
+                        `;
+                    }).join('');
+                
+                updateStatus('✅ Markets loaded', 'success');
+            } catch (error) {
+                console.error('[APP] Markets error:', error);
+                updateStatus(`❌ Markets error: ${error.message}`, 'error');
+            }
+        };
+
+        window.refreshExchangeStats = async function() {
+            if (!sdk) return;
+            
+            try {
+                console.log('[APP] Fetching exchange stats...');
+                const stats = await sdk.getExchangeStats();
+                console.log('[APP] Stats:', stats);
+                
+                // Exchange stats structure: daily_usd_volume, daily_trades_count
+                const volume = parseFloat(stats.daily_usd_volume || 0);
+                const trades = stats.daily_trades_count || 0;
+                
+                // Calculate total OI from all markets
+                let totalOI = 0;
+                (stats.order_book_stats || []).forEach(s => {
+                    const oi = parseFloat(s.open_interest || 0);
+                    totalOI += oi;
+                });
+                
+                console.log('[APP] Total OI calculated:', totalOI);
+                
+                document.getElementById('stat24hVolume').textContent = `$${(volume / 1000000000).toFixed(2)}B`;
+                document.getElementById('statOpenInterest').textContent = totalOI > 0 ? `$${(totalOI / 1000000).toFixed(1)}M` : '$0';
+                document.getElementById('statTotalTrades').textContent = trades.toLocaleString();
+            } catch (error) {
+                console.error('[APP] Stats error:', error);
+            }
+        };
+
+        // Funding Rates
+        window.refreshFunding = async function() {
+            if (!sdk) return;
+            
+            try {
+                console.log('[APP] Fetching funding rates...');
+                const funding = await sdk.getFundingRates();
+                console.log('[APP] Funding:', funding);
+                
+                const list = document.getElementById('fundingRates');
+                const rates = funding.funding_rates || [];
+                
+                // Show ALL funding rates (not limited to 30)
+                list.innerHTML = rates.map(f => {
+                    const rate = parseFloat(f.rate || 0) * 100;
+                    const rateColor = rate >= 0 ? '#10b981' : '#ef4444';
+                    return `
+                        <div style="display: flex; justify-content: space-between; padding: 12px; background: #1a1f2e; margin: 8px 0; border-radius: 6px; border: 1px solid #2a2f3f;">
+                            <div style="flex: 1;"><strong>${f.symbol || 'Market'}</strong></div>
+                            <div style="flex: 1; text-align: right; color: ${rateColor}; font-weight: 600;">${rate.toFixed(4)}%</div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('[APP] Funding error:', error);
+            }
+        };
+
+        // Orderbook
+        let currentObMarket = 1; // BTC
+        window.changeOrderbookMarket = function() {
+            currentObMarket = parseInt(document.getElementById('obMarketSelect').value);
+            refreshOrderbook();
+        };
+
+        window.refreshOrderbook = async function() {
+            if (!sdk) return;
+            
+            try {
+                const ob = await sdk.getOrderBook(currentObMarket);
+                
+                // Populate orderbook state from REST API response (already normalized by SDK)
+                orderbookState.asks = (ob.asks || []).map(a => ({
+                    price: parseFloat(a.price),
+                    size: parseFloat(a.size)
+                })).filter(a => !isNaN(a.price) && !isNaN(a.size) && a.price > 0 && a.size > 0);
+                
+                orderbookState.bids = (ob.bids || []).map(b => ({
+                    price: parseFloat(b.price),
+                    size: parseFloat(b.size)
+                })).filter(b => !isNaN(b.price) && !isNaN(b.size) && b.price > 0 && b.size > 0);
+                
+                // Sort: asks ascending, bids descending
+                orderbookState.asks.sort((a, b) => a.price - b.price);
+                orderbookState.bids.sort((a, b) => b.price - a.price);
+                
+                // Display using the stateful display function
+                displayOrderbookFromState();
+            } catch (error) {
+                console.error('[APP] Orderbook error:', error);
+            }
+        };
+
+        // Recent Trades
+        window.refreshRecentTrades = async function() {
+            if (!sdk) return;
+            
+            try {
+                console.log('[APP] Fetching recent trades for market', currentObMarket);
+                const trades = await sdk.getRecentTrades(currentObMarket, 50);
+                console.log('[APP] Trades:', trades);
+                
+                const list = document.getElementById('recentTrades');
+                const tradesList = trades.trades || [];
+                
+                let html = '<div style="font-size: 11px; color: #9ca3af; padding: 5px; display: flex; justify-content: space-between;"><span>Time</span><span>Price</span><span>Size</span><span>Side</span></div>';
+                
+                html += tradesList.slice(0, 50).map(t => {
+                    const time = new Date(parseInt(t.timestamp || 0)).toLocaleTimeString();
+                    const isBuy = t.is_ask === '0' || t.is_ask === false;
+                    const sideColor = isBuy ? '#10b981' : '#ef4444';
+                    const sideText = isBuy ? 'BUY' : 'SELL';
+                    
+                    return `
+                        <div style="display: flex; justify-content: space-between; padding: 3px 5px; font-size: 12px; border-bottom: 1px solid #1a1f3a;">
+                            <span style="color: #9ca3af;">${time}</span>
+                            <span>${parseFloat(t.price || 0).toFixed(2)}</span>
+                            <span style="color: #9ca3af;">${parseFloat(t.base_amount || 0).toFixed(4)}</span>
+                            <span style="color: ${sideColor}; font-weight: 600;">${sideText}</span>
+                        </div>
+                    `;
+                }).join('');
+                
+                list.innerHTML = html;
+            } catch (error) {
+                console.error('[APP] Trades error:', error);
+            }
+        };
+
+        // === WEBSOCKET LIVE DATA ===
+        
+        let wsConnected = false;
+        let lastUpdateTime = null;
+        let autoRefreshInterval = null;
+        
+        // Maintain full orderbook state
+        let orderbookState = {
+            asks: [],  // sorted ascending by price
+            bids: []   // sorted descending by price
+        };
+        
+        // Throttle display updates - proper throttling with minimum interval
+        let lastDisplayUpdate = 0;
+        let displayUpdateTimeout = null;
+        const DISPLAY_THROTTLE_MS = 300; // Update max ~3x per second for smooth transitions
+
+        // Auto-refresh analytics every 30 seconds (only when NOT using WebSocket)
+        autoRefreshInterval = setInterval(() => {
+            if (sdk && !wsConnected) {
+                refreshExchangeStats();
+                refreshMarkets();
+                refreshFunding();
+                refreshOrderbook();
+                refreshRecentTrades();
+            }
+        }, 30000);
+
+        // Initial load when SDK ready
+        function initAnalytics() {
+            if (sdk) {
+                refreshFunding();
+                refreshOrderbook();
+                refreshRecentTrades();
+            }
+        }
+
+        window.connectLiveData = async function() {
+            if (!sdk) {
+                alert('Initialize SDK first (click Settings)');
+                return;
+            }
+
+            try {
+                updateStatus('⏳ Connecting to live data stream...', 'loading');
+                
+                // Connect WebSocket
+                await sdk.connectWebSocket();
+                wsConnected = true;
+                
+                // Update UI
+                document.getElementById('wsStatus').textContent = 'CONNECTED';
+                document.getElementById('wsStatus').style.background = '#10b981';
+                document.getElementById('wsConnectBtn').style.display = 'none';
+                document.getElementById('wsDisconnectBtn').style.display = 'inline-block';
+                
+                updateStatus('✅ Live data stream connected', 'success');
+                
+                // Reset orderbook state on new connection
+                orderbookState = { asks: [], bids: [] };
+                
+                // Subscribe to current market orderbook (default is BTC market 1)
+                sdk.ws.subscribeOrderBook(currentObMarket, handleOrderbookUpdate);
+                console.log('[APP] Subscribed to orderbook updates for market', currentObMarket);
+                document.getElementById('obUpdateMode').textContent = '📡 Live Updates: ON';
+                document.getElementById('obUpdateMode').style.color = '#10b981';
+                
+                // Initial fetch of orderbook
+                refreshOrderbook();
+                
+                // Subscribe to account updates (if credentials set)
+                if (sdk.config.accountIndex) {
+                    sdk.ws.subscribeAccountAll(sdk.config.accountIndex, handleAccountUpdate);
+                    console.log('[APP] Subscribed to account updates');
+                } else {
+                    console.log('[APP] No account credentials - skipping account updates');
+                }
+            } catch (error) {
+                updateStatus(`❌ WebSocket error: ${error.message}`, 'error');
+                console.error('[APP] WebSocket error:', error);
+            }
+        };
+
+        window.disconnectLiveData = function() {
+            if (sdk && sdk.ws) {
+                sdk.disconnectWebSocket();
+                wsConnected = false;
+                
+                // Stop auto-refresh
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                    autoRefreshInterval = null;
+                }
+                
+                // Clear throttle timeout
+                if (displayUpdateTimeout) {
+                    clearTimeout(displayUpdateTimeout);
+                    displayUpdateTimeout = null;
+                }
+                
+                // Reset orderbook state
+                orderbookState = { asks: [], bids: [] };
+                
+                document.getElementById('wsStatus').textContent = 'DISCONNECTED';
+                document.getElementById('wsStatus').style.background = '#ef4444';
+                document.getElementById('wsConnectBtn').style.display = 'inline-block';
+                document.getElementById('wsDisconnectBtn').style.display = 'none';
+                document.getElementById('obUpdateMode').textContent = '📡 Live Updates: OFF';
+                document.getElementById('obUpdateMode').style.color = '#9ca3af';
+                
+                updateStatus('Disconnected from live data', 'info');
+                console.log('[APP] Disconnected and stopped all updates');
+            }
+        };
+
+        // Handle live orderbook updates
+        let updateCount = 0;
+        function handleOrderbookUpdate(message) {
+            updateCount++;
+            if (updateCount % 50 === 0) {
+                console.log(`[APP] Processed ${updateCount} orderbook updates`);
+            }
+            
+            lastUpdateTime = new Date();
+            document.getElementById('wsLastUpdate').textContent = `Last update: ${lastUpdateTime.toLocaleTimeString()}`;
+            
+            if (message.type === 'subscribed/order_book') {
+                // Initial snapshot - reset state
+                console.log('[APP] Orderbook snapshot received');
+                orderbookState = { asks: [], bids: [] };
+                applyOrderbookUpdate(message.order_book);
+                scheduleOrderbookDisplay();
+            } else if (message.type === 'update/order_book') {
+                // Incremental update
+                applyOrderbookUpdate(message.order_book);
+                scheduleOrderbookDisplay();
+            }
+        }
+
+        // Handle live trades updates
+        function handleTradesUpdate(message) {
+            lastUpdateTime = new Date();
+            document.getElementById('wsLastUpdate').textContent = `Last update: ${lastUpdateTime.toLocaleTimeString()}`;
+            
+            console.log('[APP] Trades WS update:', message.type);
+            
+            if (message.trades || message.trade) {
+                const trades = message.trades || [message.trade];
+                displayTradesFromWS(trades);
+            }
+        }
+
+        // Handle account updates
+        function handleAccountUpdate(message) {
+            lastUpdateTime = new Date();
+            document.getElementById('wsLastUpdate').textContent = `Last update: ${lastUpdateTime.toLocaleTimeString()}`;
+            
+            console.log('[APP] Account WS update:', message.type);
+            
+            if (message.type === 'subscribed/account_all' || message.type === 'update/account_all') {
+                // Update account display
+                if (message.balance) {
+                    const available = parseFloat(message.balance.available_balance || 0);
+                    const total = parseFloat(message.balance.total_balance || 0);
+                    document.getElementById('balance').textContent = `$${available.toFixed(2)}`;
+                    document.getElementById('balanceDetails').textContent = `Total: $${total.toFixed(2)} | Status: Active`;
+                }
+                
+                // Update positions - DEFENSIVE: check if array
+                if (message.positions) {
+                    let positions = Array.isArray(message.positions) ? message.positions : [message.positions];
+                    const activePositions = positions.filter(p => p && parseFloat(p.position || 0) !== 0);
+                    const posText = activePositions.length > 0 
+                        ? activePositions.map(p => {
+                            const pos = parseFloat(p.position || 0);
+                            const side = pos > 0 ? 'LONG' : 'SHORT';
+                            return `Market ${p.market_id}: ${side} ${Math.abs(pos)} @ $${p.avg_entry_price || 0}`;
+                        }).join('\n')
+                        : 'No open positions';
+                    document.getElementById('positions').textContent = posText;
+                }
+                
+                // Update orders list - DEFENSIVE: check if array
+                if (message.orders) {
+                    const list = document.getElementById('ordersList');
+                    let orders = Array.isArray(message.orders) ? message.orders : [message.orders];
+                    orders = orders.filter(o => o && o.status === 'active');
+                    
+                    if (orders.length === 0) {
+                        list.innerHTML = '<p style="color: #9ca3af; font-size: 13px;">No active orders</p>';
+                    } else {
+                        list.innerHTML = orders.map(o => `
+                            <div class="order-item">
+                                <div class="info">
+                                    <span>${o.symbol || 'Market'} ${o.is_ask === '1' ? 'SELL' : 'BUY'} ${sdk.formatAmount(o.base_amount || 0)}</span>
+                                    <span>Price: ${sdk.formatPrice(o.price || 0)} | Index: ${o.index}</span>
+                                </div>
+                                <div class="actions">
+                                    <button onclick="cancelOrder(${o.market_id}, ${o.index})" class="btn-danger">Cancel</button>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            }
+        }
+
+        // Apply incremental orderbook update to state
+        function applyOrderbookUpdate(update) {
+            const newAsks = update.asks || [];
+            const newBids = update.bids || [];
+            
+            // Update asks
+            newAsks.forEach(ask => {
+                const price = parseFloat(ask.price || ask[0]);
+                const size = parseFloat(ask.size || ask.base_amount || ask[1]);
+                
+                // Remove existing order at this price (use toFixed for comparison)
+                orderbookState.asks = orderbookState.asks.filter(a => a.price.toFixed(2) !== price.toFixed(2));
+                
+                // Add new order if size > 0
+                if (size > 0) {
+                    orderbookState.asks.push({ price: price, size: size });
+                }
+            });
+            
+            // Update bids
+            newBids.forEach(bid => {
+                const price = parseFloat(bid.price || bid[0]);
+                const size = parseFloat(bid.size || bid.base_amount || bid[1]);
+                
+                // Remove existing order at this price (use toFixed for comparison)
+                orderbookState.bids = orderbookState.bids.filter(b => b.price.toFixed(2) !== price.toFixed(2));
+                
+                // Add new order if size > 0
+                if (size > 0) {
+                    orderbookState.bids.push({ price: price, size: size });
+                }
+            });
+            
+            // Aggregate by price level (group same prices and sum sizes)
+            const aggregateByPrice = (orders) => {
+                const priceMap = new Map();
+                orders.forEach(o => {
+                    const priceKey = o.price.toFixed(2);
+                    if (priceMap.has(priceKey)) {
+                        priceMap.get(priceKey).size += o.size;
+                    } else {
+                        priceMap.set(priceKey, { price: o.price, size: o.size });
+                    }
+                });
+                return Array.from(priceMap.values());
+            };
+            
+            orderbookState.asks = aggregateByPrice(orderbookState.asks);
+            orderbookState.bids = aggregateByPrice(orderbookState.bids);
+            
+            // Sort: asks ascending (lowest first), bids descending (highest first)
+            orderbookState.asks.sort((a, b) => a.price - b.price);
+            orderbookState.bids.sort((a, b) => b.price - a.price);
+            
+            // Keep only top 100 levels
+            orderbookState.asks = orderbookState.asks.slice(0, 100);
+            orderbookState.bids = orderbookState.bids.slice(0, 100);
+        }
+        
+        // Display orderbook from maintained state (proper throttling)
+        const scheduleOrderbookDisplay = function() {
+            const now = Date.now();
+            const timeSinceLastUpdate = now - lastDisplayUpdate;
+            
+            // If enough time has passed, update immediately
+            if (timeSinceLastUpdate >= DISPLAY_THROTTLE_MS) {
+                lastDisplayUpdate = now;
+                displayOrderbookFromState();
+            } else {
+                // Otherwise schedule update for remaining time
+                if (!displayUpdateTimeout) {
+                    const remainingTime = DISPLAY_THROTTLE_MS - timeSinceLastUpdate;
+                    displayUpdateTimeout = setTimeout(() => {
+                        displayUpdateTimeout = null;
+                        lastDisplayUpdate = Date.now();
+                        displayOrderbookFromState();
+                    }, remainingTime);
+                }
+            }
+        };
+        
+        const displayOrderbookFromState = function() {
+            const list = document.getElementById('orderbook');
+            if (!list) return;
+
+            // Get top 12 from each side
+            const topAsks = orderbookState.asks.slice(0, 12).reverse();
+            const topBids = orderbookState.bids.slice(0, 12);
+            
+            // Find max individual size for bar scaling
+            const maxAskSize = topAsks.length > 0 ? Math.max(...topAsks.map(a => a.size)) : 1;
+            const maxBidSize = topBids.length > 0 ? Math.max(...topBids.map(b => b.size)) : 1;
+            
+            // Calculate cumulative sizes for display
+            let cumulativeAskSize = 0;
+            const asksWithCumulative = topAsks.map(a => {
+                cumulativeAskSize += a.size;
+                return { ...a, cumulative: cumulativeAskSize };
+            });
+            
+            let cumulativeBidSize = 0;
+            const bidsWithCumulative = topBids.map(b => {
+                cumulativeBidSize += b.size;
+                return { ...b, cumulative: cumulativeBidSize };
+            });
+            
+            let html = `
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 10px; color: #71717a; padding: 8px 12px; border-bottom: 1px solid #27272a; font-weight: 500; letter-spacing: 0.5px;">
+                    <div style="text-align: left;">PRICE (USD)</div>
+                    <div style="text-align: right;">SIZE</div>
+                    <div style="text-align: right;">TOTAL</div>
+                </div>
+            `;
+            
+            // Asks (sells) - red with depth bars based on individual size
+            asksWithCumulative.forEach((a, idx) => {
+                const depthPercent = Math.min((a.size / maxAskSize) * 100, 100);
+                const isBestAsk = idx === asksWithCumulative.length - 1;
+                const rowStyle = isBestAsk ? 'background: rgba(239, 68, 68, 0.05);' : '';
+                html += `
+                    <div data-price="${a.price.toFixed(2)}" class="orderbook-row ask-row ${isBestAsk ? 'best-ask' : ''}" style="${rowStyle}">
+                        <div class="depth-bar ask-depth" style="width: ${depthPercent}%;"></div>
+                        <span class="price-cell ask-price ${isBestAsk ? 'best-price' : ''}">$${a.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        <span class="size-cell">${a.size.toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
+                        <span class="total-cell">${a.cumulative.toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
+                    </div>
+                `;
+            });
+            
+            // Spread with mid-price
+            if (topAsks.length > 0 && topBids.length > 0) {
+                const bestAsk = topAsks[0].price;
+                const bestBid = topBids[0].price;
+                const spread = bestAsk - bestBid;
+                const midPrice = (bestAsk + bestBid) / 2;
+                const spreadPercent = ((spread / bestBid) * 100).toFixed(3);
+                html += `
+                    <div style="padding: 12px 12px; background: linear-gradient(90deg, rgba(16, 185, 129, 0.05) 0%, rgba(239, 68, 68, 0.05) 100%); text-align: center; font-size: 12px; font-weight: 600; color: #a1a1aa; margin: 2px 0; border-top: 1px solid #27272a; border-bottom: 1px solid #27272a; font-family: 'SF Mono', 'Monaco', 'Courier New', monospace; transition: all 0.3s ease;">
+                        <div style="font-size: 9px; color: #71717a; margin-bottom: 4px; letter-spacing: 0.5px;">SPREAD</div>
+                        <div style="color: #f59e0b; font-size: 13px; margin-bottom: 4px;">$${spread.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} <span style="font-size: 10px; color: #71717a;">(${spreadPercent}%)</span></div>
+                        <div style="font-size: 10px; color: #9ca3af;">Mid: $${midPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+                    </div>
+                `;
+            }
+            
+            // Bids (buys) - green with depth bars based on individual size
+            bidsWithCumulative.forEach((b, idx) => {
+                const depthPercent = Math.min((b.size / maxBidSize) * 100, 100);
+                const isBestBid = idx === 0;
+                const rowStyle = isBestBid ? 'background: rgba(16, 185, 129, 0.05);' : '';
+                html += `
+                    <div data-price="${b.price.toFixed(2)}" class="orderbook-row bid-row ${isBestBid ? 'best-bid' : ''}" style="${rowStyle}">
+                        <div class="depth-bar bid-depth" style="width: ${depthPercent}%;"></div>
+                        <span class="price-cell bid-price ${isBestBid ? 'best-price' : ''}">$${b.price.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                        <span class="size-cell">${b.size.toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
+                        <span class="total-cell">${b.cumulative.toLocaleString('en-US', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
+                    </div>
+                `;
+            });
+            
+            list.innerHTML = html;
+        };
+
+        // Display trades from WebSocket
+        function displayTradesFromWS(trades) {
+            const list = document.getElementById('recentTrades');
+            
+            let html = '<div style="font-size: 11px; color: #9ca3af; padding: 5px; display: flex; justify-content: space-between;"><span>Time</span><span>Price</span><span>Size</span><span>Side</span></div>';
+            
+            html += trades.slice(0, 50).map(t => {
+                const time = new Date(parseInt(t.timestamp || Date.now())).toLocaleTimeString();
+                const isBuy = t.is_ask === '0' || t.is_ask === false;
+                const sideColor = isBuy ? '#10b981' : '#ef4444';
+                const sideText = isBuy ? 'BUY' : 'SELL';
+                
+                return `
+                    <div style="display: flex; justify-content: space-between; padding: 3px 5px; font-size: 12px; border-bottom: 1px solid #1a1f3a; animation: slideIn 0.3s;">
+                        <span style="color: #9ca3af;">${time}</span>
+                        <span>${parseFloat(t.price || 0).toFixed(2)}</span>
+                        <span style="color: #9ca3af;">${parseFloat(t.base_amount || t.size || 0).toFixed(4)}</span>
+                        <span style="color: ${sideColor}; font-weight: 600;">${sideText}</span>
+                    </div>
+                `;
+            }).join('');
+            
+            list.innerHTML = html;
+        }
+
+        // Update market selector to change WS subscriptions
+        const originalChangeMarket = window.changeOrderbookMarket;
+        window.changeOrderbookMarket = function() {
+            const newMarket = parseInt(document.getElementById('obMarketSelect').value);
+            
+            // If WebSocket is connected, resubscribe
+            if (wsConnected && sdk && sdk.ws) {
+                // Unsubscribe from old market
+                sdk.ws.unsubscribe('order_book', currentObMarket);
+                sdk.ws.unsubscribe('trades', currentObMarket);
+                
+                console.log(`[APP] Unsubscribed from market ${currentObMarket}`);
+                
+                // Update current market
+                currentObMarket = newMarket;
+                
+                // Reset orderbook state for new market
+                orderbookState = { asks: [], bids: [] };
+                
+                // Subscribe to new market
+                sdk.ws.subscribeOrderBook(currentObMarket, handleOrderbookUpdate);
+                
+                console.log(`[APP] Switched live feed to market ${currentObMarket}`);
+                updateStatus(`✅ Switched to market ${currentObMarket}`, 'success');
+            } else {
+                currentObMarket = newMarket;
+                refreshOrderbook();
+            }
+        };
+
+        // Add professional CSS for orderbook animations
+        const style = document.createElement('style');
+        style.textContent = `
+            /* Orderbook Row Styles */
+            .orderbook-row {
+                position: relative;
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 10px;
+                padding: 6px 12px;
+                font-size: 12px;
+                cursor: pointer;
+                transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                will-change: background-color;
+            }
+            
+            .orderbook-row:hover {
+                transform: translateX(2px);
+            }
+            
+            .ask-row:hover {
+                background: rgba(239, 68, 68, 0.12) !important;
+            }
+            
+            .bid-row:hover {
+                background: rgba(16, 185, 129, 0.12) !important;
+            }
+            
+            /* Depth Bar Animations */
+            .depth-bar {
+                position: absolute;
+                left: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 0;
+                transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+                will-change: width;
+            }
+            
+            .ask-depth {
+                background: rgba(239, 68, 68, 0.1);
+            }
+            
+            .bid-depth {
+                background: rgba(16, 185, 129, 0.1);
+            }
+            
+            /* Cell Styles */
+            .price-cell, .size-cell, .total-cell {
+                position: relative;
+                z-index: 1;
+                font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+                transition: all 0.3s ease;
+            }
+            
+            .price-cell {
+                font-weight: 600;
+                text-align: left;
+            }
+            
+            .size-cell {
+                text-align: right;
+                color: #d4d4d8;
+            }
+            
+            .total-cell {
+                text-align: right;
+                font-size: 11px;
+                color: #71717a;
+            }
+            
+            /* Ask Prices */
+            .ask-price {
+                color: #f87171;
+            }
+            
+            .ask-row.best-ask {
+                background: rgba(239, 68, 68, 0.08) !important;
+            }
+            
+            .ask-price.best-price {
+                color: #ef4444;
+                font-weight: 700;
+                text-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+            }
+            
+            /* Bid Prices */
+            .bid-price {
+                color: #34d399;
+            }
+            
+            .bid-row.best-bid {
+                background: rgba(16, 185, 129, 0.08) !important;
+            }
+            
+            .bid-price.best-price {
+                color: #10b981;
+                font-weight: 700;
+                text-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+            }
+            
+            /* Price Update Flash Animation */
+            @keyframes priceFlash {
+                0% { 
+                    background: rgba(102, 126, 234, 0.2);
+                    transform: scale(1.01);
+                }
+                100% { 
+                    background: transparent;
+                    transform: scale(1);
+                }
+            }
+            
+            @keyframes sizeIncrease {
+                0% { 
+                    color: #10b981;
+                    transform: scale(1.05);
+                }
+                100% { 
+                    color: #d4d4d8;
+                    transform: scale(1);
+                }
+            }
+            
+            @keyframes sizeDecrease {
+                0% { 
+                    color: #ef4444;
+                    transform: scale(0.95);
+                }
+                100% { 
+                    color: #d4d4d8;
+                    transform: scale(1);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

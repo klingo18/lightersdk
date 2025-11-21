@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lighter SDK - Simple Starter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #5568d3; }
+        .status { padding: 15px; margin: 15px 0; border-radius: 6px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 6px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🚀 Lighter SDK - Quick Start</h1>
+        <p>Minimal example to get started with Lighter SDK</p>
+        
+        <div id="status" class="status">Loading WASM...</div>
+        
+        <button onclick="runExample()" id="runBtn" disabled>Run Example</button>
+        
+        <div id="output" style="margin-top: 20px;"></div>
+    </div>
+
+    <script src="../../dist/wasm_exec.js"></script>
+    <script type="module">
+        import { LighterSDK } from '../core/lighter-sdk.js';
+
+        let sdk;
+
+        // Load WASM
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const statusEl = document.getElementById('status');
+                statusEl.textContent = 'Loading WASM...';
+                
+                const go = new Go();
+                const wasm = await WebAssembly.instantiateStreaming(
+                    fetch('../../dist/lighter.wasm'), 
+                    go.importObject
+                );
+                go.run(wasm.instance);
+                
+                statusEl.className = 'status success';
+                statusEl.textContent = '✅ WASM loaded! Click button to run example.';
+                document.getElementById('runBtn').disabled = false;
+                
+            } catch (error) {
+                const statusEl = document.getElementById('status');
+                statusEl.className = 'status error';
+                statusEl.textContent = `❌ Error loading WASM: ${error.message}`;
+            }
+        });
+
+        // Run example
+        window.runExample = async function() {
+            const output = document.getElementById('output');
+            
+            try {
+                output.innerHTML = '<div class="status">⏳ Running example...</div>';
+                
+                // Initialize SDK
+                sdk = new LighterSDK({
+                    privateKey: '0eeb96ae31190f62423de7f3657ac19c74c513d507cb6006e92cda1f9a22ca11c269099fa0af904d',
+                    accountIndex: 316837,
+                    apiKeyIndex: 2,
+                    network: 'mainnet'
+                });
+
+                await sdk.init();
+                console.log('SDK initialized');
+
+                // Get account info
+                const account = await sdk.getAccount();
+                console.log('Account:', account);
+
+                // Get positions
+                const positions = await sdk.getPositions();
+                console.log('Positions:', positions);
+
+                // Get BTC market details
+                const btcMarket = await sdk.getMarketDetails('BTC');
+                console.log('BTC Market:', btcMarket);
+
+                // Display results
+                output.innerHTML = `
+                    <div class="status success">
+                        <strong>✅ Example completed!</strong>
+                    </div>
+                    <h3>Account Info:</h3>
+                    <pre>${JSON.stringify(account, null, 2)}</pre>
+                    <h3>Positions:</h3>
+                    <pre>${JSON.stringify(positions, null, 2)}</pre>
+                    <h3>BTC Market:</h3>
+                    <pre>${JSON.stringify(btcMarket, null, 2)}</pre>
+                `;
+                
+            } catch (error) {
+                output.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ Error:</strong> ${error.message}
+                    </div>
+                    <pre>${error.stack}</pre>
+                `;
+            }
+        };
+    </script>
+</body>
+</html>

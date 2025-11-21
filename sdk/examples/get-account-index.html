@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Account Index</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e1a;
+            color: #e0e0e0;
+            padding: 40px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #0f1419;
+            border: 1px solid #1a1f2e;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #9ca3af;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+        input {
+            width: 100%;
+            background: #1a1f2e;
+            border: 1px solid #2a2f4a;
+            color: #e0e0e0;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+        }
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #1a1f2e;
+            border-radius: 6px;
+            border-left: 3px solid #10b981;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result-item {
+            margin-bottom: 15px;
+        }
+        .result-label {
+            color: #9ca3af;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .result-value {
+            color: #e0e0e0;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: monospace;
+        }
+        .result-value.big {
+            font-size: 32px;
+            color: #10b981;
+        }
+        .error {
+            background: #1a1f2e;
+            border-left: 3px solid #ef4444;
+            padding: 15px;
+            border-radius: 6px;
+            color: #ef4444;
+            display: none;
+        }
+        .error.show {
+            display: block;
+        }
+        .subaccounts {
+            margin-top: 15px;
+        }
+        .subaccount-item {
+            padding: 10px;
+            background: #0f1419;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .subaccount-index {
+            font-weight: 600;
+            color: #667eea;
+        }
+        code {
+            background: #0a0e1a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔍 Get Account Index</h1>
+        <p class="subtitle">Find your Lighter account index from your Ethereum address</p>
+        
+        <label class="result-label">Ethereum Address (0x...)</label>
+        <input type="text" id="addressInput" placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb" />
+        
+        <button onclick="getAccountIndex()">Get Account Index</button>
+        
+        <div id="errorDiv" class="error"></div>
+        
+        <div id="resultDiv" class="result">
+            <div class="result-item">
+                <div class="result-label">Main Account Index</div>
+                <div class="result-value big" id="accountIndex">--</div>
+            </div>
+            
+            <div class="result-item">
+                <div class="result-label">L1 Address</div>
+                <div class="result-value" id="l1Address">--</div>
+            </div>
+            
+            <div class="result-item">
+                <div class="result-label">Sub-Accounts</div>
+                <div id="subAccountsList" class="subaccounts"></div>
+            </div>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #2a2f4a;">
+                <div class="result-label">Use in SDK</div>
+                <code>
+const sdk = new LighterSDK({<br>
+&nbsp;&nbsp;privateKey: '0x...',<br>
+&nbsp;&nbsp;accountIndex: <span id="sdkAccountIndex">--</span>,<br>
+&nbsp;&nbsp;network: 'mainnet'<br>
+});
+                </code>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { LighterSDK } from '../core/lighter-sdk.js';
+
+        window.getAccountIndex = async function() {
+            const address = document.getElementById('addressInput').value.trim();
+            const resultDiv = document.getElementById('resultDiv');
+            const errorDiv = document.getElementById('errorDiv');
+            
+            // Hide previous results
+            resultDiv.classList.remove('show');
+            errorDiv.classList.remove('show');
+            
+            // Validate address
+            if (!address) {
+                errorDiv.textContent = 'Please enter an Ethereum address';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            if (!address.startsWith('0x') || address.length !== 42) {
+                errorDiv.textContent = 'Invalid Ethereum address format. Must start with 0x and be 42 characters.';
+                errorDiv.classList.add('show');
+                return;
+            }
+            
+            try {
+                // Create SDK instance (no account index needed for this call)
+                const sdk = new LighterSDK({
+                    network: 'mainnet'
+                });
+                
+                await sdk.init();
+                
+                console.log('Looking up account for address:', address);
+                const result = await sdk.getAccountIndexFromAddress(address);
+                
+                // Display results
+                document.getElementById('accountIndex').textContent = result.accountIndex;
+                document.getElementById('l1Address').textContent = result.l1Address;
+                document.getElementById('sdkAccountIndex').textContent = result.accountIndex;
+                
+                // Display sub-accounts
+                const subAccountsList = document.getElementById('subAccountsList');
+                subAccountsList.innerHTML = result.subAccounts.map((acc, idx) => `
+                    <div class="subaccount-item">
+                        <span>${idx === 0 ? '🌟 Main Account' : `Sub-Account ${idx}`}</span>
+                        <span class="subaccount-index">Index: ${acc.index}</span>
+                    </div>
+                `).join('');
+                
+                resultDiv.classList.add('show');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = `Error: ${error.message}`;
+                errorDiv.classList.add('show');
+            }
+        };
+        
+        // Allow Enter key to submit
+        document.getElementById('addressInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                getAccountIndex();
+            }
+        });
+    </script>
+</body>
+</html>
