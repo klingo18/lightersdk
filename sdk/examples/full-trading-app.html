@@ -531,7 +531,7 @@
         </div>
     </div>
 
-    <script src="../../dist/wasm_exec.js"></script>
+    <script src="../../wasm_exec.js"></script>
     <script type="module">
         import { LighterSDK, ORDER_TYPES, TIME_IN_FORCE } from '../core/lighter-sdk.js';
 
@@ -718,13 +718,21 @@
 
         // Save Credentials
         window.saveCredentials = async function() {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('active'));
+            const privateKey = document.getElementById('credPrivateKey').value.trim();
+            const accountIndex = parseInt(document.getElementById('credAccountIndex').value);
+            const apiKeyIndex = parseInt(document.getElementById('credApiKeyIndex').value) || 0;
             
-            // Show selected tab
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-            event.target.classList.add('active');
+            if (!privateKey || !accountIndex) {
+                alert('Please enter both private key and account index');
+                return;
+            }
+            
+            localStorage.setItem('lighter_private_key', privateKey);
+            localStorage.setItem('lighter_account_index', accountIndex);
+            localStorage.setItem('lighter_api_key_index', apiKeyIndex);
+            
+            closeCredentials();
+            await initializeSDK(privateKey, accountIndex, apiKeyIndex);
         };
 
         // Data tabs
