@@ -570,7 +570,7 @@
                     
                     // Auto-initialize if creds exist
                     if (creds.privateKey && creds.accountIndex && creds.apiKeyIndex !== undefined) {
-                        initializeSDK(creds);
+                        initializeSDK(creds.privateKey, creds.accountIndex, creds.apiKeyIndex);
                     }
                 } catch (e) {
                     console.error('Failed to load credentials:', e);
@@ -578,24 +578,8 @@
             }
         }
 
-        window.saveCredentials = function() {
-            const creds = {
-                privateKey: document.getElementById('credPrivateKey').value.trim(),
-                accountIndex: parseInt(document.getElementById('credAccountIndex').value),
-                apiKeyIndex: parseInt(document.getElementById('credApiKeyIndex').value)
-            };
-            
-            if (!creds.privateKey || !creds.accountIndex || creds.apiKeyIndex === undefined) {
-                alert('Please fill all fields');
-                return;
-            }
-            
-            localStorage.setItem('lighterCreds', JSON.stringify(creds));
-            closeCredentials();
-            initializeSDK(creds);
-        };
-
-        async function initializeSDK(creds) {
+        async function initializeSDK(privateKey, accountIndex, apiKeyIndex) {
+            const creds = { privateKey, accountIndex, apiKeyIndex };
             try {
                 updateStatus('⏳ Initializing SDK...', 'loading');
                 
@@ -727,9 +711,12 @@
                 return;
             }
             
-            localStorage.setItem('lighter_private_key', privateKey);
-            localStorage.setItem('lighter_account_index', accountIndex);
-            localStorage.setItem('lighter_api_key_index', apiKeyIndex);
+            // Save as JSON to match loadCredentials format
+            localStorage.setItem('lighterCreds', JSON.stringify({
+                privateKey,
+                accountIndex,
+                apiKeyIndex
+            }));
             
             closeCredentials();
             await initializeSDK(privateKey, accountIndex, apiKeyIndex);
