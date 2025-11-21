@@ -546,7 +546,7 @@
             try {
                 updateStatus('⏳ Loading WASM...', 'loading');
                 const go = new Go();
-                const wasm = await WebAssembly.instantiateStreaming(fetch('../../dist/lighter.wasm'), go.importObject);
+                const wasm = await WebAssembly.instantiateStreaming(fetch('../../lighter.wasm'), go.importObject);
                 go.run(wasm.instance);
                 
                 updateStatus('✅ WASM loaded!', 'success');
